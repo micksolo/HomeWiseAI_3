@@ -1,3 +1,23 @@
+/**
+ * Vitest Test Configuration
+ *
+ * This configuration is specifically for testing settings, separated from the main
+ * Vite build configuration (vite.config.ts) to:
+ * 1. Maintain clear separation of concerns
+ * 2. Avoid type conflicts between Vite and Vitest
+ * 3. Allow independent versioning and updates
+ *
+ * Key features:
+ * - JSDOM environment for DOM testing
+ * - Coverage reporting with v8 provider
+ * - Minimum 80% coverage thresholds
+ * - Path aliases matching build config
+ *
+ * Coverage thresholds are enforced in pre-push hooks to maintain code quality.
+ *
+ * @see vite.config.ts for build configuration
+ */
+
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'url'

@@ -48,3 +48,59 @@ export default tseslint.config({
   },
 })
 ```
+
+# HomeWise AI
+
+A local AI assistant that respects your privacy.
+
+## Project Structure
+
+### Configuration Files
+
+- `vite.config.ts`: Build and development configuration
+- `vitest.config.ts`: Test configuration and coverage settings
+
+These configurations are intentionally separated to:
+
+- Maintain clear separation of concerns
+- Avoid type conflicts between Vite and Vitest
+- Allow independent versioning and updates
+- Provide better type safety and maintainability
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+
+- Rust (latest stable)
+- Cargo
+
+### Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev`
+4. Run tests: `npm test`
+
+### Testing
+
+Tests are run using Vitest with the following requirements:
+
+- Minimum 80% coverage for all metrics
+- Tests must pass before pushing (enforced by pre-push hooks)
+- Coverage reports are generated in HTML and JSON formats
+
+### Scripts
+
+- `npm run dev`: Start development server
+- `npm run build`: Build for production
+- `npm test`: Run tests in watch mode
+- `npm run test:coverage`: Run tests with coverage report
+
+## Contributing
+
+Please see CONTRIBUTING.md for guidelines.
+
+## License
+
+[License details here]
