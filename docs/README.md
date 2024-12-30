@@ -1,49 +1,80 @@
 # HomeWise AI Documentation
 
-This directory contains comprehensive documentation for the HomeWise AI project.
+## Overview
 
-## Directory Structure
+HomeWise AI is a privacy-focused local AI assistant designed to help users interact with their documents and data while keeping everything on their local machine. The application provides intelligent document processing, text generation, and task automation capabilities without requiring internet connectivity.
 
-- `development/` - Development guidelines and technical documentation
+## Core Features
 
-  - `CONTRIBUTING.md` - Contribution guidelines and development workflow
-  - `ARCHITECTURE.md` - Technical architecture and design decisions
-  - `TESTING.md` - Testing strategies and requirements
+### Local AI Processing
 
-- `features/` - Feature-specific documentation
+- Automatic model selection based on hardware
+- Multiple model format support (GGUF, ONNX, PyTorch)
+- Efficient resource management
+- Privacy-first approach
 
-  - `core/` - Core application features
-  - `llm/` - LLM integration and implementation
+### Document Processing
 
-- `security/` - Security and privacy documentation
-  - `PRIVACY.md` - Privacy guidelines and data handling
-  - `ENCRYPTION.md` - Encryption implementation details
+- Text and PDF support
+- Microsoft Office formats (.docx, .xlsx, .pptx)
+- Apple iWork formats (.pages, .numbers, .key)
+- Image processing with OCR
+- Content indexing and search
 
-## Development Status
+### User Interface
 
-See [TODO.md](../TODO.md) in the root directory for current development status and priorities.
+- Intuitive chat interface
+- Document management
+- System resource monitoring
+- Progress tracking
+- Settings management
+
+## Documentation Contents
+
+### Core Documentation
+
+- [Goals.md](Goals.md): Project goals and vision
+- [Architecture.md](Architecture.md): System architecture
+- [User-Feature-Spec.md](User-Feature-Spec.md): Feature specifications
+
+### Development
+
+- [Developer-Setup.md](Developer-Setup.md): Development environment setup
+- [Development-Procedures.md](Development-Procedures.md): Development guidelines
+- [Code-Examples.md](Code-Examples.md): Code examples
+- [Testing-QA.md](Testing-QA.md): Testing procedures
+- [Contribution.md](Contribution.md): Contributing guidelines
+
+### Technical Specifications
+
+- [Model-Management.md](Model-Management.md): AI model management
+- [Document-Ingestion-Design.md](Document-Ingestion-Design.md): Document processing
+- [Database-Schema.md](Database-Schema.md): Data storage
+- [API-Specifications.md](API-Specifications.md): Internal APIs
+- [Frontend-Architecture.md](Frontend-Architecture.md): UI architecture
+
+### Security & Data
+
+- [Security-Encryption.md](Security-Encryption.md): Security measures
+- [Data-Model.md](Data-Model.md): Data structures
+
+### Deployment & Support
+
+- [Installation.md](Installation.md): Installation guide
+- [Deployment.md](Deployment.md): Deployment process
+- [Troubleshooting.md](Troubleshooting.md): Common issues
+- [Roadmap.md](Roadmap.md): Future development
 
 ## Getting Started
 
-1. Read `development/CONTRIBUTING.md` for development setup and workflow
-2. Review `development/ARCHITECTURE.md` for technical overview
-3. Check `security/PRIVACY.md` for privacy requirements
+1. For users: Start with [Installation.md](Installation.md)
+2. For developers: Begin with [Developer-Setup.md](Developer-Setup.md)
+3. For contributors: Read [Contribution.md](Contribution.md)
 
-## Core Principles
+## Core Requirements
 
-1. Privacy First
-
-   - All data stays local
-   - No cloud dependencies
-   - Transparent data handling
-
-2. User Experience
-
-   - Fast and responsive
-   - Intuitive interface
-   - Offline-first design
-
-3. Security
-   - End-to-end encryption
-   - Secure storage
-   - Regular security audits
+- All processing happens locally
+- No external API calls
+- Cross-platform support (macOS and Windows)
+- Privacy-first approach
+- Resource-efficient operation

@@ -1,25 +1,46 @@
 [package]
-name = "app"
+name = "homewiseai"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
 edition = "2021"
-rust-version = "1.77.2"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-name = "app_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
-[build-dependencies]
-tauri-build = { version = "2.0.2", features = [] }
 
 [dependencies]
-serde_json = "1.0"
+# Core dependencies
+tauri = { version = "2.0.0-beta", features = ["shell-open"] }
 serde = { version = "1.0", features = ["derive"] }
-log = "0.4"
-tauri = { version = "2.1.0", features = [] }
-tauri-plugin-log = "2.0.0-rc"
+serde_json = "1.0"
+tokio = { version = "1.36", features = ["full"] }
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite"] }
+
+# AI/ML dependencies
+onnxruntime = "0.13"          # Model inference
+tokenizers = "0.15"           # Text processing
+rust-bert = "0.21"           # NLP tasks
+candle-core = "0.3"          # Tensor operations
+candle-nn = "0.3"            # Neural network layers
+
+# File processing
+tantivy = "0.21"             # File indexing and search
+tree-sitter = "0.20"         # Code parsing
+tree-sitter-rust = "0.20"    # Rust language support
+tree-sitter-typescript = "0.20" # TypeScript support
+lopdf = "0.31"               # PDF processing
+zip = "0.6"                  # Archive handling
+encoding_rs = "0.8"          # Text encoding detection
+
+# Security
+ring = "0.17"                # Cryptography
+argon2 = "0.5"              # Password hashing
+jsonwebtoken = "9.2"         # JWT handling
+
+# Utilities
+rayon = "1.8"                # Parallel processing
+dashmap = "5.5"              # Thread-safe maps
+parking_lot = "0.12"         # Synchronization primitives
+tracing = "0.1"             # Logging and diagnostics
+anyhow = "1.0"              # Error handling
+
+[build-dependencies]
+tauri-build = { version = "2.0.0-beta" }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

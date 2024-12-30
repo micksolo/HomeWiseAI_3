@@ -51,7 +51,25 @@ export default tseslint.config({
 
 # HomeWise AI
 
-A local AI assistant that respects your privacy.
+A privacy-focused local AI assistant for your desktop computing needs.
+
+## Overview
+
+HomeWise AI is a desktop application that provides AI assistance while keeping all your data local and private. It helps you with tasks like:
+
+- File management and organization
+- Code assistance and analysis
+- Text processing and generation
+- Task automation
+- Local data analysis
+
+## Key Features
+
+- 🔒 Complete Privacy: All processing happens locally
+- 🚀 Fast Response: No internet latency
+- 💾 Local File Integration: Work with your local files
+- 🤖 AI-Powered: Advanced language model support
+- 🔧 Task Automation: Streamline your workflow
 
 ## Project Structure
 
