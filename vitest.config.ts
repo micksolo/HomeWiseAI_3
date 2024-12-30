@@ -14,7 +14,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      exclude: ['node_modules/', 'src/test/setup.ts', '**/*.d.ts', '**/*.config.*', '**/types/*'],
+      exclude: [
+        'node_modules/',
+        'dist/',
+        'src-tauri/',
+        'src/test/setup.ts',
+        '**/*.d.ts',
+        '**/*.config.*',
+        '**/types/*',
+      ],
       thresholds: {
         branches: 80,
         functions: 80,
