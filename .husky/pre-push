@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run full type check
+npm run type-check
+
+# Run all tests
+npm run test
+
+# Ensure build works
+npm run build 

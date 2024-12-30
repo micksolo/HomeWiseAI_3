@@ -1,80 +1,50 @@
-# HomeWise AI
+# React + TypeScript + Vite
 
-A privacy-focused, local AI assistant that runs entirely on your computer. HomeWise AI provides intelligent document interaction and general knowledge Q&A without ever sending your data to the cloud.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 🌟 Features
+Currently, two official plugins are available:
 
-- **100% Local Processing**: All operations run offline on your computer
-- **Privacy First**: No cloud connections, your data stays with you
-- **Document Intelligence**: 
-  - Process PDFs, Word docs, Excel sheets, and more
-  - Smart document search and analysis
-  - Context-aware document Q&A
-- **General Knowledge**: Answer questions without internet connection
-- **User-Friendly**: Simple chat interface with minimal setup required
-- **Resource Efficient**: Adapts to your hardware capabilities
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## 🚀 Getting Started
+## Expanding the ESLint configuration
 
-### System Requirements
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-- **Operating Systems**: 
-  - macOS (Intel/Apple Silicon)
-  - Windows 10/11
-- **Minimum Hardware**:
-  - 4GB RAM (for small model)
-  - 8GB RAM recommended
-  - CPU-only operation supported
-  - GPU optional for enhanced performance
+- Configure the top-level `parserOptions` property like this:
 
-### Installation
+```js
+export default tseslint.config({
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
+```
 
-#### macOS
-1. Download the latest `.dmg` file from the releases page
-2. Open the `.dmg` file and drag HomeWise AI to your Applications folder
-3. Launch from Applications
+- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
+- Optionally add `...tseslint.configs.stylisticTypeChecked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-#### Windows
-1. Download the latest `.exe` installer from the releases page
-2. Run the installer
-3. Launch HomeWise AI from the Start menu
+```js
+// eslint.config.js
+import react from 'eslint-plugin-react'
 
-## 💡 Usage
-
-1. **First Launch**: The app will automatically configure itself based on your hardware
-2. **Chat Interface**: Simply type your questions or commands
-3. **Document Analysis**:
-   - Click "Add Documents" to import files
-   - Ask questions about your documents
-   - Search across all imported content
-
-## 🔒 Privacy & Security
-
-- All processing happens locally on your device
-- No internet connection required for core functionality
-- AES-256 encryption for sensitive data
-- Transparent, open-source approach to security
-
-## 🛠 Technical Stack
-
-- **Frontend**: React 18.2+, TypeScript, MUI v5
-- **Backend**: Rust 1.70+
-- **AI Engine**: Local LLM using llama.cpp
-- **Storage**: SQLite + FAISS vector database
-
-## 🤝 Contributing
-
-Please read our [Contributing Guidelines](docs/development/CONTRIBUTING.md) before submitting pull requests.
-
-## 📄 License
-
-[License details to be added]
-
-## 🙋‍♂️ Support
-
-- [Issue Tracker](link-to-issues)
-- [Documentation](docs/)
-
----
-
-Made with ❤️ by the HomeWise AI Team 
+export default tseslint.config({
+  // Set the react version
+  settings: { react: { version: '18.3' } },
+  plugins: {
+    // Add the react plugin
+    react,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended rules
+    ...react.configs.recommended.rules,
+    ...react.configs['jsx-runtime'].rules,
+  },
+})
+```
