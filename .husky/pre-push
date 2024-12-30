@@ -4,8 +4,8 @@
 # Run full type check
 npm run type-check
 
-# Ensure build works
-npm run build
+# Run tests with coverage
+npm run test:coverage
 
-# TODO: Add back test running after testing framework is set up
-# npm run test 
+# Ensure build works
+npm run build 
