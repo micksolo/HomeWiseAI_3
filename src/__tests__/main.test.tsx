@@ -4,9 +4,11 @@ import App from '@components/App'
 
 // Mock ReactDOM
 vi.mock('react-dom/client', () => ({
-  createRoot: vi.fn().mockReturnValue({
-    render: vi.fn(),
-  }),
+  default: {
+    createRoot: vi.fn().mockReturnValue({
+      render: vi.fn(),
+    }),
+  },
 }))
 
 // Mock the root element
