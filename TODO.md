@@ -7,7 +7,6 @@
   - [x] Set up Rust backend environment
   - [x] Configure Tauri for desktop integration
   - [x] Set up development build scripts
-  - [ ] Configure platform-specific builds
 
 - [x] Frontend Setup
 
@@ -22,7 +21,37 @@
   - [x] EditorConfig
   - [x] Git hooks configuration
 
-## 1.1 Tauri Platform Builds
+## 2. Testing Infrastructure
+
+- [x] Testing Framework Setup
+
+  - [x] Install Vitest and configure
+  - [x] Set up React Testing Library
+  - [x] Configure test coverage reporting
+  - [x] Add test templates and documentation
+
+- [x] Pre-commit Hooks
+  - [x] Configure Husky
+  - [x] Set up lint-staged
+  - [x] Implement test coverage checks
+  - [x] Add TypeScript type checking
+
+## 3. Core Application Structure
+
+- [ ] Frontend Architecture
+
+  - [ ] Component structure
+  - [ ] State management setup
+  - [ ] Routing configuration
+  - [ ] Theme and styling system
+
+- [ ] Backend Architecture
+  - [ ] Rust service structure
+  - [ ] Database setup (SQLite)
+  - [ ] File system operations
+  - [ ] LLM integration
+
+## 4. Platform Builds
 
 - [ ] macOS Build Configuration
 
@@ -42,51 +71,20 @@
   - [ ] Configure updater mechanism
   - [ ] Test builds on both platforms
 
-## Next Steps:
+## 5. Security Implementation
 
-1. Begin implementing core application structure (Priority #2)
-2. Implement security features (Priority #4)
-3. Resolve Tauri platform builds (Part of Environment Setup)
+- [ ] Local Data Security
 
-## 2. Testing Infrastructure
+  - [ ] Implement AES-256 encryption
+  - [ ] Set up secure storage
+  - [ ] Configure file system permissions
 
-- [x] Testing Framework Setup
+- [ ] Application Security
+  - [ ] Sandboxing configuration
+  - [ ] Update mechanism security
+  - [ ] License management system
 
-  - [x] Install Vitest and configure
-  - [x] Set up React Testing Library
-  - [x] Configure test coverage reporting
-  - [x] Add test templates and documentation
-
-- [x] Pre-commit Hooks
-  - [x] Configure Husky
-  - [x] Set up lint-staged
-  - [x] Implement test coverage checks
-  - [x] Add TypeScript type checking
-
-## 3. CI/CD Pipeline
-
-- [ ] GitHub Actions Setup
-  - [ ] Build workflow
-  - [ ] Test workflow
-  - [ ] Release workflow
-  - [ ] Platform-specific builds (Windows/macOS)
-
-## 4. Core Application Structure
-
-- [ ] Frontend Architecture
-
-  - [ ] Component structure
-  - [ ] State management setup
-  - [ ] Routing configuration
-  - [ ] Theme and styling system
-
-- [ ] Backend Architecture
-  - [ ] Rust service structure
-  - [ ] Database setup (SQLite)
-  - [ ] File system operations
-  - [ ] LLM integration
-
-## 5. Documentation
+## 6. Documentation
 
 - [ ] Development Documentation
 
@@ -100,20 +98,15 @@
   - [ ] Backend API documentation
   - [ ] IPC communication documentation
 
-## 6. Security Implementation
+## 7. CI/CD Pipeline
 
-- [ ] Local Data Security
+- [ ] GitHub Actions Setup
+  - [ ] Build workflow
+  - [ ] Test workflow
+  - [ ] Release workflow
+  - [ ] Platform-specific builds (Windows/macOS)
 
-  - [ ] Implement AES-256 encryption
-  - [ ] Set up secure storage
-  - [ ] Configure file system permissions
-
-- [ ] Application Security
-  - [ ] Sandboxing configuration
-  - [ ] Update mechanism security
-  - [ ] License management system
-
-## 7. Performance Optimization
+## 8. Performance Optimization
 
 - [ ] Frontend Optimization
 
@@ -126,9 +119,15 @@
   - [ ] Memory management
   - [ ] File indexing optimization
 
+## Next Steps:
+
+1. Begin implementing core application structure
+2. Set up platform builds
+3. Implement security features
+
 ## Notes
 
-- Follow the development procedure outlined in `docs/07-Development-Procedure.md`
+- Follow the development procedure outlined in `docs/development/CONTRIBUTING.md`
 - Maintain 80% test coverage minimum
 - All features must work offline
 - Prioritize user privacy and data security
@@ -136,10 +135,11 @@
 
 ## Priority Order
 
-1. Development Environment Setup
-2. Core Application Structure
-3. Testing Infrastructure
-4. Security Implementation
-5. Documentation
-6. CI/CD Pipeline
-7. Performance Optimization
+1. Development Environment Setup ✓
+2. Testing Infrastructure ✓
+3. Core Application Structure
+4. Platform Builds
+5. Security Implementation
+6. Documentation
+7. CI/CD Pipeline
+8. Performance Optimization
