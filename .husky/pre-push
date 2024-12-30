@@ -7,5 +7,5 @@ npm run type-check
 # Run tests with coverage
 npm run test:coverage
 
-# TODO: Re-enable build check after fixing Vite config TypeScript issues
-# npm run build 
+# Ensure build works
+npm run build 

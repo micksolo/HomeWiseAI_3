@@ -23,10 +23,10 @@
     "prepare": "husky",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist src-tauri/target",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest -c ./vitest.config.ts",
+    "test:ui": "vitest --ui -c ./vitest.config.ts",
+    "test:run": "vitest run -c ./vitest.config.ts",
+    "test:coverage": "vitest run --coverage -c ./vitest.config.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
