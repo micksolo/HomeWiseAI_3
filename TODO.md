@@ -6,7 +6,8 @@
 
   - [x] Set up Rust backend environment
   - [x] Configure Tauri for desktop integration
-  - [ ] Set up development build scripts
+  - [x] Set up development build scripts
+  - [ ] Configure platform-specific builds
 
 - [x] Frontend Setup
 
@@ -21,11 +22,32 @@
   - [x] EditorConfig
   - [x] Git hooks configuration
 
+## 1.1 Tauri Platform Builds
+
+- [ ] macOS Build Configuration
+
+  - [ ] Update bundle targets format
+  - [ ] Configure signing identity
+  - [ ] Set up entitlements
+  - [ ] Test DMG creation
+
+- [ ] Windows Build Configuration
+
+  - [ ] Update bundle targets format
+  - [ ] Configure certificate settings
+  - [ ] Test NSIS installer
+
+- [ ] Cross-Platform
+  - [ ] Update schema to latest Tauri spec
+  - [ ] Configure updater mechanism
+  - [ ] Test builds on both platforms
+
 ## Next Steps:
 
-1. Set up development build scripts
-2. Begin implementing core application structure
-3. Set up testing infrastructure
+1. Begin implementing core application structure
+2. Set up testing infrastructure
+3. Configure CI/CD pipeline
+4. Resolve Tauri platform builds
 
 ## 2. Testing Infrastructure
 
