@@ -1,0 +1,14 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Run TypeScript type checking
+npm run type-check
+
+# Run tests and enforce coverage
+npm run test:coverage
+
+# Check if test coverage meets minimum threshold
+if [ $? -ne 0 ]; then
+  echo "❌ Test coverage does not meet minimum threshold of 80%"
+  exit 1
+fi 
