@@ -2,273 +2,258 @@
 
 ## Overview
 
-HomeWise AI uses Tauri's IPC system for communication between the frontend and backend. All APIs are designed to be asynchronous and handle local processing only.
+The HomeWise AI application uses Tauri's IPC mechanism for communication between the frontend (React) and backend (Rust). This document outlines the available IPC commands, their payloads, and expected responses.
 
-## Core APIs
+## IPC Command Structure
 
-### Model Management
-
-#### Hardware Detection
+All IPC commands follow this general structure:
 
 ```typescript
-interface HardwareInfo {
-    cpu: {
-        cores: number;
-        features: string[];
-        architecture: string;
-    };
-    gpu: {
-        available: boolean;
-        type: 'cuda' | 'metal' | 'none';
-        memory: number;
-    };
-    memory: {
-        total: number;
-        available: number;
-    };
-    storage: {
-        available: number;
-    };
+interface IpcCommand<T = any> {
+  command: string
+  payload: T
+  response?: any
 }
-
-// Get system hardware capabilities
-#[tauri::command]
-async fn get_hardware_info() -> Result<HardwareInfo>;
 ```
 
-#### Model Operations
+## Chat Commands
+
+### Send Message
+
+**Command:** `send_message`
+
+**Request:**
 
 ```typescript
-interface ModelInfo {
-    id: string;
-    name: string;
-    size: number;
-    format: 'gguf' | 'onnx' | 'pytorch';
-    requirements: {
-        minMemory: number;
-        preferredMemory: number;
-        gpuRequired: boolean;
-    };
+interface SendMessageRequest {
+  modelId: string
+  message: string
+  context?: ChatContext
 }
-
-// List available models
-#[tauri::command]
-async fn list_available_models() -> Result<ModelInfo[]>;
-
-// Download model
-#[tauri::command]
-async fn download_model(modelId: string) -> Result<void>;
-
-// Get download progress
-#[tauri::command]
-async fn get_download_progress(modelId: string) -> Result<number>;
 ```
 
-### Document Processing
-
-#### File Operations
+**Response:**
 
 ```typescript
-interface DocumentInfo {
-    id: string;
-    path: string;
-    type: string;
-    size: number;
-    metadata: Record<string, unknown>;
+interface MessageResponse {
+  id: string
+  content: string
+  timestamp: number
+  isUser: boolean
 }
-
-// Process document
-#[tauri::command]
-async fn process_document(path: string) -> Result<DocumentInfo>;
-
-// Search documents
-#[tauri::command]
-async fn search_documents(query: string) -> Result<DocumentInfo[]>;
 ```
 
-#### Content Extraction
+### Get Conversation
+
+**Command:** `get_conversation`
+
+**Request:**
 
 ```typescript
-interface ExtractedContent {
-    text: string;
-    metadata: Record<string, unknown>;
-    chunks: string[];
+interface GetConversationRequest {
+  conversationId: string
 }
-
-// Extract content from document
-#[tauri::command]
-async fn extract_content(documentId: string) -> Result<ExtractedContent>;
 ```
 
-### AI Interaction
-
-#### Chat Interface
+**Response:**
 
 ```typescript
-interface Message {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: number;
+interface ConversationResponse {
+  id: string
+  messages: MessageResponse[]
+  createdAt: number
+  updatedAt: number
 }
-
-interface ChatContext {
-    messages: Message[];
-    documents: string[];
-    settings: Record<string, unknown>;
-}
-
-// Send message
-#[tauri::command]
-async fn send_message(
-    content: string,
-    context: ChatContext
-) -> Result<Message>;
-
-// Get chat history
-#[tauri::command]
-async fn get_chat_history() -> Result<Message[]>;
 ```
 
-#### Model Inference
+## Document Commands
+
+### Upload Document
+
+**Command:** `upload_document`
+
+**Request:**
 
 ```typescript
-interface InferenceParams {
-    temperature: number;
-    maxTokens: number;
-    topP: number;
-    presencePenalty: number;
-    frequencyPenalty: number;
+interface UploadDocumentRequest {
+  filePath: string
+  metadata?: DocumentMetadata
 }
-
-// Generate text
-#[tauri::command]
-async fn generate_text(
-    prompt: string,
-    params: InferenceParams
-) -> Result<string>;
 ```
 
-### System Management
-
-#### Resource Monitoring
+**Response:**
 
 ```typescript
-interface SystemMetrics {
-    cpu: number;
-    memory: number;
-    gpu: number;
-    storage: number;
+interface DocumentResponse {
+  id: string
+  title: string
+  size: number
+  pages: number
+  processed: boolean
 }
-
-// Get system metrics
-#[tauri::command]
-async fn get_system_metrics() -> Result<SystemMetrics>;
 ```
 
-#### Settings Management
+### Search Documents
+
+**Command:** `search_documents`
+
+**Request:**
 
 ```typescript
-// Get application settings
-#[tauri::command]
-async fn get_settings() -> Result<Record<string, unknown>>;
+interface SearchDocumentsRequest {
+  query: string
+  filters?: SearchFilters
+}
+```
 
-// Update settings
-#[tauri::command]
-async fn update_settings(
-    settings: Record<string, unknown>
-) -> Result<void>;
+**Response:**
+
+```typescript
+interface SearchResponse {
+  results: SearchResult[]
+  total: number
+}
+```
+
+## Model Commands
+
+### List Models
+
+**Command:** `list_models`
+
+**Request:** None
+
+**Response:**
+
+```typescript
+interface ModelListResponse {
+  models: ModelInfo[]
+}
+```
+
+### Download Model
+
+**Command:** `download_model`
+
+**Request:**
+
+```typescript
+interface DownloadModelRequest {
+  modelId: string
+}
+```
+
+**Response:**
+
+```typescript
+interface DownloadProgress {
+  modelId: string
+  progress: number
+  status: 'pending' | 'downloading' | 'completed' | 'failed'
+}
+```
+
+## System Commands
+
+### Get System Info
+
+**Command:** `get_system_info`
+
+**Request:** None
+
+**Response:**
+
+```typescript
+interface SystemInfoResponse {
+  os: string
+  cpu: string
+  memory: number
+  gpu?: string
+}
+```
+
+### Get Settings
+
+**Command:** `get_settings`
+
+**Request:** None
+
+**Response:**
+
+```typescript
+interface SettingsResponse {
+  theme: 'light' | 'dark'
+  language: string
+  modelPreferences: ModelPreferences
+}
 ```
 
 ## Error Handling
 
-### Error Types
+All commands may return errors with the following structure:
 
 ```typescript
-interface APIError {
+interface IpcError {
   code: string
   message: string
-  details?: unknown
-}
-
-enum ErrorCode {
-  ModelNotFound = 'MODEL_NOT_FOUND',
-  InsufficientResources = 'INSUFFICIENT_RESOURCES',
-  ProcessingError = 'PROCESSING_ERROR',
-  FileNotFound = 'FILE_NOT_FOUND',
-  InvalidFormat = 'INVALID_FORMAT',
-  SystemError = 'SYSTEM_ERROR',
+  details?: any
 }
 ```
 
-### Error Responses
+Common error codes:
+
+- `INVALID_INPUT`: Invalid request payload
+- `NOT_FOUND`: Requested resource not found
+- `PERMISSION_DENIED`: Insufficient permissions
+- `INTERNAL_ERROR`: Server-side error
+
+## Versioning
+
+The API follows semantic versioning (v1.0.0). Breaking changes will increment the major version number.
+
+## Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+
+- 100 requests per minute per client
+- 1000 requests per hour per client
+
+## Authentication
+
+All commands require authentication via session token:
 
 ```typescript
-// All API calls return Result<T> which can be:
-type Result<T> = {
-  data?: T
-  error?: APIError
+interface AuthenticatedRequest {
+  sessionToken: string
 }
 ```
-
-## Events
-
-### System Events
-
-```typescript
-interface SystemEvent {
-  type: 'resource' | 'model' | 'document'
-  data: unknown
-}
-
-// Listen for system events
-window.listen<SystemEvent>('system-event', event => {
-  // Handle event
-})
-```
-
-### Progress Events
-
-```typescript
-interface ProgressEvent {
-  type: 'download' | 'processing'
-  id: string
-  progress: number
-  status: string
-}
-
-// Listen for progress updates
-window.listen<ProgressEvent>('progress', event => {
-  // Handle progress
-})
-```
-
-## Security
-
-### Data Protection
-
-- All APIs operate on local data only
-- No external network calls
-- Input validation
-- Path sanitization
-
-### Resource Management
-
-- Memory limits
-- Processing timeouts
-- Rate limiting
-- Error recovery
 
 ## Testing
 
-### Unit Tests
+API commands can be tested using the Tauri CLI:
 
-```typescript
-describe('API Tests', () => {
-  it('should handle model operations', async () => {
-    const result = await invoke('list_available_models')
-    expect(result.error).toBeUndefined()
-    expect(Array.isArray(result.data)).toBe(true)
-  })
-})
+```bash
+tauri invoke send_message --payload '{"modelId":"gpt-4","message":"Hello"}'
 ```
+
+## Documentation Generation
+
+API documentation is automatically generated using OpenAPI specifications and can be accessed at `/api-docs`.
+
+## Performance Monitoring
+
+API performance is monitored using Prometheus metrics:
+
+- Request latency
+- Error rates
+- Throughput
+
+## Security
+
+The API implements the following security measures:
+
+- Input validation
+- Rate limiting
+- Authentication
+- Encryption in transit
+- Logging and monitoring

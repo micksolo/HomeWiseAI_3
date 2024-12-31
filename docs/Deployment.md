@@ -1,398 +1,251 @@
-# Deployment Guide
+# Deployment
 
-## Build Process
+## Overview
 
-### Prerequisites
+HomeWise AI follows a continuous deployment strategy with automated pipelines and rigorous quality checks. This document outlines the deployment processes for both development and production environments.
 
-- Node.js 18+ and npm 9+
-- Rust 1.70+ and Cargo
-- Platform-specific requirements:
-  - macOS: Xcode Command Line Tools, Metal SDK
-  - Windows: Visual Studio Build Tools, CUDA Toolkit
+## Deployment Architecture
 
-### Environment Setup
+### Components
 
-```bash
-# Development environment
-cp .env.example .env.development
-cp .env.example .env.test
+1. **Frontend:** React application
+2. **Backend:** Tauri/Rust application
+3. **Database:** SQLite
+4. **Storage:** Local file system
 
-# Production environment
-cp .env.example .env.production
-```
+### Environments
 
-### Testing Requirements
+| Environment | Purpose                | Access          |
+| ----------- | ---------------------- | --------------- |
+| Development | Local development      | Developers only |
+| Staging     | Pre-production testing | QA team         |
+| Production  | Live user environment  | All users       |
 
-```bash
-# Unit tests
-npm run test
+## Deployment Pipeline
 
-# Integration tests
-npm run test:integration
+### Stages
 
-# E2E tests
-npm run test:e2e
+1. **Build:** Compile and package the application
+2. **Test:** Run automated tests
+3. **Security Scan:** Check for vulnerabilities
+4. **Deploy:** Release to target environment
+5. **Verify:** Confirm successful deployment
+6. **Monitor:** Track application health
 
-# Coverage report
-npm run test:coverage
-```
+### Tools
 
-### Quality Gates
+- **CI/CD:** GitHub Actions
+- **Containerization:** Docker (where applicable)
+- **Configuration Management:** Ansible
+- **Monitoring:** Prometheus, Grafana
 
-- Unit test coverage: >80%
-- E2E test coverage: >60%
-- No critical security vulnerabilities
-- Performance benchmarks met
-- Accessibility standards passed
+## Development Deployment
 
-### Development Build
+### Local Setup
 
-```bash
-# Install dependencies
-npm install
-cargo install tauri-cli
+1. Clone repository
+2. Install dependencies:
+   ```bash
+   npm install
+   cargo build
+   ```
+3. Start development server:
+   ```bash
+   npm run dev
+   ```
 
-# Start development server
-npm run tauri dev
-```
+### Hot Reload
 
-### Production Build
+- Frontend: Vite development server
+- Backend: Tauri hot reload
 
-```bash
-# Build frontend assets
-npm run build
+## Staging Deployment
 
-# Build desktop application
-npm run tauri build
-```
+### Process
 
-## Platform-Specific Builds
+1. Create release branch
+2. Run build pipeline
+3. Deploy to staging environment
+4. Perform manual testing
+5. Approve for production
 
-### macOS Build
-
-```bash
-# Install macOS dependencies
-xcode-select --install
-rustup target add aarch64-apple-darwin x86_64-apple-darwin
-
-# Build universal binary
-npm run tauri build -- --target universal-apple-darwin
-
-# Code signing
-codesign --force --sign "Developer ID Application: Your Name" \
-         --options runtime \
-         "./target/release/bundle/macos/HomeWise AI.app"
-
-# Notarization
-xcrun notarytool submit "./target/release/bundle/macos/HomeWise AI.app" \
-      --apple-id "your.email@example.com" \
-      --password "@keychain:AC_PASSWORD" \
-      --team-id "YOUR_TEAM_ID"
-```
-
-### Windows Build
-
-```bash
-# Install Windows dependencies
-rustup target add x86_64-pc-windows-msvc
-
-# Build installer
-npm run tauri build -- --target x86_64-pc-windows-msvc
-
-# Code signing
-signtool sign /tr http://timestamp.digicert.com /td sha256 /fd sha256 \
-    /a "./target/release/bundle/msi/HomeWise AI.msi"
-```
-
-## Release Process
-
-### 1. Version Update
-
-```bash
-# Update version numbers
-npm version patch # or minor/major
-cargo set-version 1.0.0
-
-# Update changelog
-echo "## [1.0.0] - $(date +%Y-%m-%d)" >> CHANGELOG.md
-```
-
-### 2. Pre-release Checks
-
-```bash
-# Run test suite
-npm run test
-npm run test:e2e
-
-# Check bundle size
-npm run analyze
-
-# Verify documentation
-npm run docs:build
-```
-
-### 3. Build Artifacts
-
-```bash
-# Clean previous builds
-npm run clean
-cargo clean
-
-# Build for all platforms
-npm run build:all
-```
-
-### 4. Release Distribution
-
-```bash
-# Create GitHub release
-gh release create v1.0.0 \
-    --title "HomeWise AI v1.0.0" \
-    --notes "Release notes from CHANGELOG.md" \
-    ./target/release/bundle/*/HomeWise*
-```
-
-## Auto-Update System
-
-### Update Configuration
-
-```toml
-# src-tauri/tauri.conf.json
-{
-  "tauri": {
-    "updater": {
-      "active": true,
-      "endpoints": [
-        "https://releases.homewise.ai/{{target}}/{{current_version}}"
-      ],
-      "dialog": true,
-      "pubkey": "YOUR_UPDATE_PUBLIC_KEY"
-    }
-  }
-}
-```
-
-### Update Server Setup
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name releases.homewise.ai;
-
-    location / {
-        root /var/www/releases;
-        autoindex off;
-
-        # CORS headers
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
-    }
-}
-```
-
-## Monitoring
-
-### Application Metrics
-
-```typescript
-interface AppMetrics {
-    version: string;
-    os: string;
-    arch: string;
-    memory: {
-        total: number;
-        used: number;
-    };
-    model: {
-        name: string;
-        memory: number;
-    };
-}
-
-// Collect metrics
-#[tauri::command]
-async fn collect_metrics() -> Result<AppMetrics> {
-    // Implementation
-}
-```
-
-### Error Tracking
-
-```rust
-#[derive(Debug, Serialize)]
-struct ErrorReport {
-    timestamp: i64,
-    version: String,
-    error: String,
-    stack: String,
-    context: HashMap<String, String>,
-}
-
-// Report error
-#[tauri::command]
-async fn report_error(error: ErrorReport) -> Result<()> {
-    // Implementation
-}
-```
-
-## Recovery Procedures
-
-### Data Backup
-
-```rust
-#[tauri::command]
-async fn backup_user_data() -> Result<()> {
-    // 1. Stop active processes
-    // 2. Create backup archive
-    // 3. Store in safe location
-}
-```
-
-### Error Recovery
-
-```rust
-#[tauri::command]
-async fn recover_from_error() -> Result<()> {
-    // 1. Load last known good state
-    // 2. Restore user data
-    // 3. Restart services
-}
-```
-
-## Security Measures
-
-### Runtime Verification
-
-```rust
-fn verify_installation() -> Result<()> {
-    // 1. Check code signature
-    // 2. Verify binary integrity
-    // 3. Check for tampering
-}
-```
-
-### Data Protection
-
-```rust
-fn secure_user_data() -> Result<()> {
-    // 1. Encrypt sensitive data
-    // 2. Set proper permissions
-    // 3. Sanitize temp files
-}
-```
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflow
+### Configuration
 
 ```yaml
-name: CI/CD Pipeline
+# .github/workflows/staging.yml
+name: Staging Deployment
 
 on:
   push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
+    branches: [staging]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run Tests
-        run: npm run test
-
-      - name: Coverage Report
-        run: npm run test:coverage
-
-  build:
-    needs: test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-
-    steps:
-      - name: Build
-        run: npm run tauri build
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Staging
-        if: github.ref == 'refs/heads/develop'
-        run: ./scripts/deploy-staging.sh
-
-      - name: Deploy to Production
-        if: github.ref == 'refs/heads/main'
-        run: ./scripts/deploy-production.sh
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install
+      - run: npm run build
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release
+          path: |
+            dist/
+            target/release/
 ```
 
-### Deployment Environments
+## Production Deployment
 
-#### Staging Environment
+### Process
 
-- Purpose: Pre-production testing
-- URL: staging.homewise.ai
-- Auto-deploys from develop branch
-- Feature flags enabled
-- Test data available
+1. Merge approved changes to main
+2. Run production pipeline
+3. Deploy to production servers
+4. Verify deployment
+5. Monitor application
 
-#### Production Environment
+### Configuration
 
-- Purpose: Live user environment
-- URL: homewise.ai
-- Manual deployment approval required
-- Feature flags configured
-- Production data only
+```yaml
+# .github/workflows/production.yml
+name: Production Deployment
 
-### Performance Monitoring
+on:
+  push:
+    branches: [main]
 
-#### Metrics Collection
-
-```typescript
-interface PerformanceMetrics {
-  loadTime: number
-  memoryUsage: number
-  modelLoadTime: number
-  inferenceTime: number
-  responseLatency: number
-}
-
-async function collectMetrics(): Promise<PerformanceMetrics> {
-  // Implementation
-}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install
+      - run: npm run build
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release
+          path: |
+            dist/
+            target/release/
 ```
 
-#### Alerting Thresholds
+## Rollback Strategy
 
-- Memory usage > 80%
-- Response time > 2000ms
-- Error rate > 1%
-- Model load time > 5000ms
+### Automatic Rollback
 
-### Rollback Procedures
+- Triggered by health check failures
+- Reverts to previous stable version
+- Notifies operations team
 
-#### Quick Rollback
+### Manual Rollback
+
+1. Identify stable version
+2. Run rollback pipeline
+3. Verify system status
+
+## Monitoring and Logging
+
+### Metrics
+
+- Application performance
+- Resource utilization
+- Error rates
+- User activity
+
+### Alerts
+
+- System failures
+- Performance degradation
+- Security incidents
+- Resource thresholds
+
+## Configuration Management
+
+### Environment Variables
 
 ```bash
-# Revert to last known good version
-npm run deploy:revert
-
-# Verify system health
-npm run health:check
-
-# Notify stakeholders
-npm run notify:rollback
+# .env
+API_URL=https://api.example.com
+DATABASE_PATH=/data/db.sqlite
+SECRET_KEY=your-secret-key
 ```
 
-#### Data Recovery
+### Configuration Files
 
-```rust
-async fn restore_checkpoint(version: String) -> Result<()> {
-    // 1. Stop services
-    // 2. Restore data snapshot
-    // 3. Restart services
-    // 4. Verify integrity
-}
+- `tauri.conf.json`
+- `vite.config.ts`
+- `Cargo.toml`
+
+## Database Management
+
+### Migrations
+
+```bash
+cargo run -- migrate up
 ```
+
+### Backups
+
+- Daily full backups
+- Incremental backups every hour
+- Offsite storage
+
+## Security Considerations
+
+### Access Control
+
+- Least privilege principle
+- Role-based access
+- Audit logging
+
+### Encryption
+
+- Data at rest: AES-256
+- Data in transit: TLS 1.3
+
+## Performance Optimization
+
+### Frontend
+
+- Code splitting
+- Lazy loading
+- Caching
+
+### Backend
+
+- Connection pooling
+- Query optimization
+- Caching
+
+## Disaster Recovery
+
+### Plan
+
+1. Identify critical systems
+2. Establish recovery objectives
+3. Implement backup strategy
+4. Test recovery process
+
+### Tools
+
+- Backup systems
+- Replication
+- Failover mechanisms
+
+## Documentation
+
+### Deployment Guide
+
+- Step-by-step instructions
+- Troubleshooting
+- Rollback procedures
+
+### Runbook
+
+- Common operations
+- Maintenance tasks
+- Emergency procedures

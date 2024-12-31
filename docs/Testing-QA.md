@@ -1,301 +1,217 @@
-# Testing & QA Guidelines
+# Testing and Quality Assurance
 
 ## Overview
 
-HomeWise AI follows a comprehensive testing strategy that covers both frontend and backend components, with a focus on ensuring reliability, performance, and security. All tests are run using Vitest, providing a modern and fast testing experience.
+HomeWise AI implements a comprehensive testing strategy to ensure code quality and reliability. The testing approach includes unit tests, integration tests, end-to-end tests, and performance tests.
 
-## Test Commands
+## Testing Pyramid
 
-```bash
-# Run tests in watch mode
-npm run test
-
-# Run tests with UI
-npm run test:ui
-
-# Run tests once
-npm run test:run
-
-# Generate coverage report
-npm run test:coverage
+```
+        End-to-End Tests
+            /     \
+Integration Tests  \
+          \       /
+         Unit Tests
 ```
 
-## Testing Levels
+## Unit Testing
 
-### 1. Unit Testing
+### Frontend Unit Tests
 
-#### Frontend (React Components)
+- **Tools:** Jest, React Testing Library
+- **Coverage:** 80% minimum
+- **Location:** `src/__tests__/`
+
+**Example Test:**
 
 ```typescript
-// components/__tests__/App.test.tsx
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import App from '@components/App'
+import Chat from '../components/Chat'
 
-describe('App Component', () => {
-  it('renders the main heading', () => {
-    render(<App />)
-    const heading = screen.getByRole('heading', { name: /homewise ai/i })
-    expect(heading).toBeDefined()
-    expect(heading.textContent?.toLowerCase()).toContain('homewise ai')
-  })
-
-  it('renders the privacy message', () => {
-    render(<App />)
-    const message = screen.getByText(/your local ai assistant that respects your privacy/i)
-    expect(message).toBeDefined()
-  })
-
-  it('handles user interactions', async () => {
-    const user = userEvent.setup()
-    render(<App />)
-
-    const button = screen.getByRole('button')
-    await user.click(button)
-
-    // Add assertions for the interaction
-  })
+test('renders chat messages', () => {
+  render(<Chat modelId="test-model" />)
+  const messageElement = screen.getByText(/Hello/i)
+  expect(messageElement).toBeInTheDocument()
 })
 ```
 
-#### Backend (Rust Functions)
+### Backend Unit Tests
+
+- **Tools:** Rust's built-in test framework
+- **Coverage:** 90% minimum
+- **Location:** `src-tauri/src/`
+
+**Example Test:**
 
 ```rust
-// src-tauri/src/commands.rs
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_process_document() {
-        let result = process_document("test.txt");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_error_handling() {
-        let result = process_document("nonexistent.txt");
-        assert!(matches!(result, Err(Error::FileNotFound)));
+    fn test_message_processing() {
+        let result = process_message("Hello");
+        assert_eq!(result, "Processed: Hello");
     }
 }
 ```
 
-### 2. Integration Testing
+## Integration Testing
 
-#### Frontend Integration
+### Frontend-Backend Integration
+
+- **Tools:** Jest, Tauri test utilities
+- **Focus:** IPC communication, data flow
+- **Location:** `src/__tests__/integration/`
+
+**Example Test:**
 
 ```typescript
-// integration/__tests__/ModelManager.test.tsx
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { invoke } from '@tauri-apps/api/tauri'
-import ModelManager from '@components/ModelManager'
-
-// Mock Tauri invoke
-vi.mock('@tauri-apps/api/tauri', () => ({
-  invoke: vi.fn()
-}))
-
-describe('ModelManager Integration', () => {
-  it('loads available models', async () => {
-    const mockModels = [
-      { id: 'model1', name: 'Test Model' }
-    ]
-
-    vi.mocked(invoke).mockResolvedValue(mockModels)
-
-    render(<ModelManager />)
-
-    const modelElement = await screen.findByText('Test Model')
-    expect(modelElement).toBeDefined()
+test('sends message via IPC', async () => {
+  const { result } = renderHook(() => useChat('test-model'))
+  await act(async () => {
+    await result.current.sendMessage('Hello')
   })
+  expect(result.current.messages).toHaveLength(1)
 })
 ```
 
-### 3. End-to-End Testing
+## End-to-End Testing
+
+- **Tools:** Playwright
+- **Focus:** User workflows, UI interactions
+- **Location:** `tests/e2e/`
+
+**Example Test:**
 
 ```typescript
-// e2e/app.spec.ts
-import { test, expect } from '@playwright/test'
-
-test('basic app flow', async ({ page }) => {
+test('chat workflow', async ({ page }) => {
   await page.goto('/')
-
-  // Check main elements
-  await expect(page.getByRole('heading')).toContainText('HomeWise AI')
-
-  // Test interactions
-  await page.getByRole('button').click()
-
-  // Verify results
-  await expect(page.getByTestId('result')).toBeVisible()
+  await page.fill('#message-input', 'Hello')
+  await page.click('#send-button')
+  await expect(page.locator('.message')).toContainText('Hello')
 })
 ```
 
-## Test Configuration
+## Performance Testing
 
-### Vitest Configuration
+### Frontend Performance
 
-```typescript
-// vitest.config.ts
-import { defineConfig } from 'vitest/config'
+- **Tools:** Lighthouse, React Profiler
+- **Metrics:** First Contentful Paint, Time to Interactive
+- **Thresholds:** FCP < 1s, TTI < 2s
 
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'src-tauri/',
-        'src/test/setup.ts',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/types/*',
-      ],
-      thresholds: {
-        branches: 80,
-        functions: 80,
-        lines: 80,
-        statements: 80,
-      },
-    },
-  },
-})
-```
+### Backend Performance
 
-### Test Setup
+- **Tools:** Criterion, k6
+- **Metrics:** Response time, throughput
+- **Thresholds:** P95 < 500ms, throughput > 100 req/s
 
-```typescript
-// src/test/setup.ts
-import '@testing-library/jest-dom'
-import { afterEach, vi } from 'vitest'
-import { cleanup } from '@testing-library/react'
+## Test Automation
 
-// Cleanup after each test
-afterEach(() => {
-  cleanup()
-})
+### CI/CD Pipeline
 
-// Mock Tauri API
-vi.mock('@tauri-apps/api', () => ({
-  invoke: vi.fn(),
-  event: {
-    listen: vi.fn(),
-    emit: vi.fn(),
-  },
-}))
-```
+- **Tools:** GitHub Actions
+- **Stages:**
+  1. Linting and formatting
+  2. Unit tests
+  3. Integration tests
+  4. End-to-end tests
+  5. Performance tests
+  6. Security scans
 
-## Quality Gates
-
-### Coverage Requirements
-
-- Minimum 80% coverage for all metrics:
-  - Statements
-  - Branches
-  - Functions
-  - Lines
-
-### Pre-commit Hooks
-
-```json
-{
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "npm run test:coverage"
-    }
-  }
-}
-```
-
-## CI/CD Integration
-
-### GitHub Actions Workflow
+**Example Workflow:**
 
 ```yaml
-name: Tests
+name: CI Pipeline
+
 on: [push, pull_request]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Run Tests
-        run: npm run test:coverage
-
-      - name: Check Coverage
-        run: |
-          if [ $(npm run test:coverage | grep -o "All files.*%" | grep -o "[0-9.]*") -lt 80 ]; then
-            echo "Coverage below 80%"
-            exit 1
-          fi
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+      - run: npm install
+      - run: npm run test
+      - run: npm run test:e2e
 ```
 
-## Performance Testing
+## Code Coverage
 
-### Resource Monitoring
+- **Minimum Requirements:**
+  - Frontend: 80%
+  - Backend: 90%
+- **Tools:** Jest, tarpaulin
+- **Reporting:** HTML reports, CI integration
 
-```typescript
-interface PerformanceMetrics {
-  loadTime: number
-  memoryUsage: number
-  modelLoadTime: number
-  inferenceTime: number
-  responseLatency: number
-}
+## Quality Gates
 
-async function collectMetrics(): Promise<PerformanceMetrics> {
-  // Implementation
-}
-```
-
-### Alerting Thresholds
-
-- Memory usage > 80%
-- Response time > 2000ms
-- Error rate > 1%
-- Model load time > 5000ms
+1. All tests must pass
+2. Code coverage requirements met
+3. No critical security vulnerabilities
+4. Performance thresholds met
+5. Code style and formatting compliant
 
 ## Security Testing
 
-### Input Validation
+### Static Analysis
 
-```typescript
-describe('Security Validation', () => {
-  it('sanitizes user input', async () => {
-    const input = '<script>alert("xss")</script>'
-    const result = await processUserInput(input)
-    expect(result).not.toContain('<script>')
-  })
-})
-```
+- **Tools:** ESLint, Clippy
+- **Focus:** Security vulnerabilities, code smells
 
-### File Access Security
+### Dependency Scanning
 
-```rust
-#[test]
-fn test_file_access_security() {
-    let result = process_document("../system/file.txt");
-    assert!(matches!(result, Err(Error::AccessDenied)));
-}
-```
+- **Tools:** npm audit, cargo audit
+- **Frequency:** Daily
+
+### Penetration Testing
+
+- **Tools:** OWASP ZAP, Burp Suite
+- **Focus:** XSS, CSRF, SQL injection
+
+## Test Data Management
+
+- **Fixtures:** JSON files for test data
+- **Factories:** Test data generation utilities
+- **Cleanup:** Automatic test data removal
+
+## Test Reporting
+
+- **Formats:** JUnit, HTML, JSON
+- **Tools:** Allure, Jest
+- **Integration:** CI/CD dashboards
+
+## Code Review Process
+
+1. Create pull request
+2. Automated tests run
+3. Code review by at least two developers
+4. Address feedback
+5. Merge after approval
+
+## Bug Tracking
+
+- **Tools:** GitHub Issues
+- **Workflow:**
+  1. Create issue
+  2. Assign priority
+  3. Fix and test
+  4. Verify and close
+
+## Release Testing
+
+### Pre-release Checklist
+
+- [ ] All tests passing
+- [ ] Code coverage met
+- [ ] Security scans clean
+- [ ] Performance tests passed
+- [ ] Documentation updated
+
+### Post-release Monitoring
+
+- Error tracking
+- Performance monitoring
+- User feedback collection
