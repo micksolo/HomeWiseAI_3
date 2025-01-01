@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
 describe('Tauri API', () => {
   const originalWindow = { ...window }
   const mockInvoke = vi.fn()
 
   beforeEach(() => {
     vi.resetModules()
-    window = { ...originalWindow }
     window = { ...originalWindow }
   })
 
