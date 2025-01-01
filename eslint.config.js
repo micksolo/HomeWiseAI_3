@@ -1,60 +1,45 @@
 import tseslint from 'typescript-eslint'
-import eslintConfigPrettier from 'eslint-config-prettier'
-import globals from 'globals'
-import js from '@eslint/js'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default tseslint.config(
+  tseslint.configs.recommended,
   {
-    // Base ESLint configuration
-    ...js.configs.recommended,
-    
-    // Global settings
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        ...globals.browser,
-        ...globals.es2021,
-        ...globals.node
-      },
       parserOptions: {
         project: ['./tsconfig.json', './tsconfig.node.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
-
-    // TypeScript configuration
-    ...tseslint.configs.strictTypeChecked,
-    ...tseslint.configs.stylisticTypeChecked,
-
-    // React Hooks rules
     plugins: {
+      '@typescript-eslint': tseslint.plugin,
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
     },
-
     rules: {
+      '@typescript-eslint/no-unused-vars': ['warn', { 
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_'
+      }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
-      // Additional custom rules can be added here
     },
-
-    // Files to ignore
     ignores: [
-      'dist',
-      'build',
-      'node_modules',
-      '*.config.js',
-      'src-tauri',
-      'coverage'
+      'dist/**/*',
+      'build/**/*',
+      'node_modules/**/*',
+      'coverage/**/*',
+      'src-tauri/**/*',
+      'vite.config.ts',
+      'vitest.config.ts'
     ]
-  },
-  // Prettier config (must be last to override other formatting rules)
-  eslintConfigPrettier
+  }
 )
