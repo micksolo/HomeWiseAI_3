@@ -42,12 +42,55 @@
 
 ### 1. Local AI Processing
 
-- [ ] Hardware Integration
+- [ ] Hardware Integration (CPU & Memory)
 
-  - [ ] CPU capabilities detection
-  - [ ] GPU detection and support (CUDA/Metal)
-  - [ ] Memory analysis and management
-  - [ ] Resource monitoring system
+  - [x] CPU capabilities detection
+  - [x] Memory analysis and management
+  - [x] Resource monitoring system
+  - [x] Frontend Integration
+    - [x] Create HardwareMonitor component
+    - [x] Implement real-time resource monitoring UI
+    - [x] Add resource usage graphs/visualizations
+    - [x] Add system alerts for resource constraints
+  - [ ] Documentation
+    - [ ] Update architecture docs with hardware monitoring
+    - [ ] Add API documentation for hardware service
+    - [ ] Add troubleshooting guide for hardware issues
+  - [ ] Error Handling
+    - [ ] Improve error messages for hardware detection
+    - [ ] Add retry logic for transient failures
+    - [ ] Implement graceful degradation
+    - [ ] Add system compatibility checks
+
+- [ ] GPU Support
+
+  - [ ] GPU Detection
+    - [ ] CUDA support for NVIDIA GPUs
+    - [ ] Metal support for Apple Silicon/AMD
+    - [ ] ROCm support for AMD GPUs
+    - [ ] Fallback to CPU when no GPU available
+  - [ ] GPU Performance
+    - [ ] VRAM detection and monitoring
+    - [ ] GPU utilization tracking
+    - [ ] Temperature monitoring
+    - [ ] Power usage monitoring
+  - [ ] Multi-GPU Support
+    - [ ] Multiple GPU detection
+    - [ ] GPU selection logic
+    - [ ] Load balancing between GPUs
+  - [ ] Frontend Integration
+    - [ ] GPU status component
+    - [ ] GPU performance monitoring UI
+    - [ ] GPU selection interface
+  - [ ] Testing
+    - [ ] Unit tests for GPU detection
+    - [ ] Integration tests with different GPU types
+    - [ ] Performance benchmarks
+    - [ ] Fallback scenario testing
+  - [ ] Documentation
+    - [ ] GPU support documentation
+    - [ ] Performance optimization guide
+    - [ ] Troubleshooting guide for GPU issues
 
 - [ ] Model Management
 
@@ -117,6 +160,7 @@
   - [ ] Context awareness
   - [ ] Memory management
   - [ ] Performance optimization
+  - [ ] chat interfaces support "branching" so it's possible to create a new thread with the _current_ chat context to ask tertiary questions without polluting the context of future questions
 
 - [ ] Smart Features
   - [ ] Document summarization
@@ -169,19 +213,23 @@
 - [x] Development Environment Setup (Completed)
 - [x] Testing Infrastructure (Completed)
 - [ ] Phase 1: Core Features & Privacy (In Progress)
-  - [ ] 1.1 Local AI Processing (Current Focus)
-  - [ ] 1.2 Document Processing
-  - [ ] 1.3 User Interface
+  - [x] Hardware Detection and Resource Monitoring (Completed)
+    - [x] CPU capabilities detection
+    - [x] Memory analysis and management
+    - [x] Resource monitoring system
+    - [ ] GPU detection and support (Next)
+  - [ ] Document Processing
+  - [ ] User Interface
 - [ ] Phase 2: Enhanced Features (Planned)
 - [ ] Phase 3: Platform & Deployment (Future)
 
 ## Next Steps
 
-1. Implement hardware detection and resource monitoring
-2. Develop local model management system
-3. Create secure document processing pipeline
-4. Build privacy-focused user interface
-5. Add core AI processing capabilities
+1. ~~Implement hardware detection and resource monitoring~~ (Completed)
+2. Implement GPU detection and support
+3. Develop local model management system
+4. Create secure document processing pipeline
+5. Build privacy-focused user interface
 
 ## Notes
 

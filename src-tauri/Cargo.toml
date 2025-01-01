@@ -5,42 +5,23 @@ edition = "2021"
 
 [dependencies]
 # Core dependencies
-tauri = { version = "2.0.0-beta", features = ["shell-open"] }
+tauri = { version = "1.5", features = ["shell-all"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.36", features = ["full"] }
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite"] }
-
-# AI/ML dependencies
-onnxruntime = "0.13"          # Model inference
-tokenizers = "0.15"           # Text processing
-rust-bert = "0.21"           # NLP tasks
-candle-core = "0.3"          # Tensor operations
-candle-nn = "0.3"            # Neural network layers
-
-# File processing
-tantivy = "0.21"             # File indexing and search
-tree-sitter = "0.20"         # Code parsing
-tree-sitter-rust = "0.20"    # Rust language support
-tree-sitter-typescript = "0.20" # TypeScript support
-lopdf = "0.31"               # PDF processing
-zip = "0.6"                  # Archive handling
-encoding_rs = "0.8"          # Text encoding detection
-
-# Security
-ring = "0.17"                # Cryptography
-argon2 = "0.5"              # Password hashing
-jsonwebtoken = "9.2"         # JWT handling
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "sqlite"] }
+sysinfo = "0.29"           # System information
+log = "0.4"               # Logging
 
 # Utilities
-rayon = "1.8"                # Parallel processing
-dashmap = "5.5"              # Thread-safe maps
-parking_lot = "0.12"         # Synchronization primitives
-tracing = "0.1"             # Logging and diagnostics
-anyhow = "1.0"              # Error handling
+rayon = "1.7"            # Parallel processing
+dashmap = "5.4"          # Thread-safe maps
+parking_lot = "0.12"     # Synchronization primitives
+tracing = "0.1"         # Logging and diagnostics
+anyhow = "1.0"          # Error handling
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta" }
+tauri-build = { version = "1.5" }
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

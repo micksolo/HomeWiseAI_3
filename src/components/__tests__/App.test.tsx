@@ -1,9 +1,32 @@
-import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import App from '@components/App'
+import { describe, it, expect, vi } from 'vitest'
+import App from '../App'
+import { useHardwareInfo } from '../../hooks/useHardwareInfo'
+
+// Mock the useHardwareInfo hook
+vi.mock('../../hooks/useHardwareInfo')
 
 describe('App Component', () => {
+  beforeEach(() => {
+    // Setup default mock for useHardwareInfo
+    vi.mocked(useHardwareInfo).mockReturnValue({
+      hardwareInfo: {
+        cpuCount: 8,
+        cpuBrand: 'Intel Core i7',
+        memoryTotal: 16 * 1024 * 1024,
+        memoryUsed: 8 * 1024 * 1024,
+      },
+      systemResources: {
+        memoryUsagePercentage: 50,
+        totalMemoryGB: 16,
+        usedMemoryGB: 8,
+      },
+      error: null,
+      isLoading: false,
+      refresh: vi.fn(),
+    })
+  })
+
   it('renders the main heading', () => {
     render(<App />)
     const heading = screen.getByRole('heading', { name: /homewise ai/i })
@@ -17,14 +40,8 @@ describe('App Component', () => {
     expect(message).toBeDefined()
   })
 
-  it('increments counter when button is clicked', async () => {
-    const user = userEvent.setup()
+  it('renders the HardwareMonitor component', () => {
     render(<App />)
-
-    const button = screen.getByRole('button')
-    expect(button.textContent).toContain('Count is 0')
-
-    await user.click(button)
-    expect(button.textContent).toContain('Count is 1')
+    expect(screen.getByText('System Resources')).toBeInTheDocument()
   })
 })

@@ -11,6 +11,9 @@ vi.mock('react-dom/client', () => ({
   },
 }))
 
+// Mock Tauri API
+vi.mock('@tauri-apps/api')
+
 // Mock the root element
 document.body.innerHTML = '<div id="root"></div>'
 

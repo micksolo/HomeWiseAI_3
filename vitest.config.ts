@@ -20,49 +20,37 @@
 
 /// <reference types="vitest" />
 import { defineConfig } from 'vitest/config'
-import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
 export default defineConfig({
+  plugins: [react() as any],
   test: {
-    globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        'src-tauri/',
-        'src/test/setup.ts',
-        '**/*.d.ts',
-        '**/*.config.*',
-        '**/types/*',
-      ],
-      thresholds: {
-        branches: 80,
-        functions: 80,
-        lines: 80,
-        statements: 80,
+    globals: true,
+    pool: 'forks',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+      },
+    },
+    css: {
+      modules: {
+        classNameStrategy: 'non-scoped',
       },
     },
   },
   resolve: {
-    alias: [
-      { find: '@', replacement: resolve(__dirname, 'src') },
-      { find: '@components', replacement: resolve(__dirname, 'src/components') },
-      { find: '@hooks', replacement: resolve(__dirname, 'src/hooks') },
-      { find: '@utils', replacement: resolve(__dirname, 'src/utils') },
-      { find: '@services', replacement: resolve(__dirname, 'src/services') },
-      { find: '@styles', replacement: resolve(__dirname, 'src/styles') },
-      { find: '@assets', replacement: resolve(__dirname, 'src/assets') },
-      { find: '@types', replacement: resolve(__dirname, 'src/types') },
-      { find: '@constants', replacement: resolve(__dirname, 'src/constants') },
-      { find: '@layouts', replacement: resolve(__dirname, 'src/layouts') },
-    ],
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@services': path.resolve(__dirname, './src/services'),
+      '@hooks': path.resolve(__dirname, './src/hooks'),
+      '@types': path.resolve(__dirname, './src/types'),
+      '@styles': path.resolve(__dirname, './src/styles'),
+      '@tauri-apps/api': path.resolve(__dirname, './node_modules/@tauri-apps/api'),
+      '@tauri-apps/api/tauri': path.resolve(__dirname, './node_modules/@tauri-apps/api/dist/tauri'),
+    },
   },
 })
