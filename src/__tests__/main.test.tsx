@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, act } from '@testing-library/react'
 import App from '@components/App'
 
 // Mock ReactDOM
@@ -27,7 +27,11 @@ describe('Main Entry', () => {
     expect(rootElement).toBeDefined()
 
     // Verify that App can be rendered
-    const { container } = render(<App />)
-    expect(container).toBeDefined()
+    let container: HTMLElement
+    await act(async () => {
+      const result = render(<App />)
+      container = result.container
+    })
+    expect(container!).toBeDefined()
   })
 })
