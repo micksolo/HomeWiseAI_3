@@ -34,7 +34,37 @@ src-tauri/
 
 ## Key Subsystems
 
-### 1. AI Engine
+### 1. Hardware Monitoring System
+
+The Hardware Monitoring System provides real-time monitoring and analysis of system resources. Key components include:
+
+- **Resource Detection:** Automatic detection and profiling of system hardware resources including:
+
+  - CPU information (cores, threads, frequency)
+  - Memory capacity and usage
+  - System load and performance metrics
+
+- **Real-time Monitoring:** Continuous monitoring of system resources with:
+
+  - Configurable polling intervals
+  - Resource usage tracking
+  - Performance metrics collection
+  - System health indicators
+
+- **Resource Management:**
+
+  - Dynamic resource allocation
+  - Usage threshold monitoring
+  - Performance optimization recommendations
+  - System capability assessment
+
+- **Frontend Integration:**
+  - Real-time resource visualization
+  - System health indicators
+  - Performance alerts and notifications
+  - Resource usage trends
+
+### 2. AI Engine
 
 The AI Engine is responsible for processing AI-related tasks within HomeWise AI. It encompasses the following functionalities:
 
@@ -44,7 +74,7 @@ The AI Engine is responsible for processing AI-related tasks within HomeWise AI.
 - **Memory Management:** Efficient memory management is crucial for running AI models locally. The engine includes mechanisms for managing memory usage, such as dynamically loading and unloading models and managing intermediate data.
 - **Context Handling:** The AI Engine manages the context for AI tasks, allowing for more coherent and relevant responses. This involves maintaining and utilizing conversation history and other relevant information.
 
-### 2. Document Processing
+### 3. Document Processing
 
 The Document Processing subsystem handles the ingestion, processing, and indexing of documents within HomeWise AI. It includes the following capabilities:
 
@@ -54,7 +84,7 @@ The Document Processing subsystem handles the ingestion, processing, and indexin
 - **Metadata Management:** The system manages metadata associated with documents, such as title, author, and creation date. This metadata can be used for organizing and searching documents.
 - **OCR Capabilities:** Optical Character Recognition (OCR) is implemented to extract text from image-based documents or scanned PDFs. This allows the application to process and index content from a wider range of document types.
 
-### 3. Data Storage
+### 4. Data Storage
 
 - SQLite database
 - File system integration

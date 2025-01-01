@@ -9,19 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Hardware monitoring system
-  - Real-time CPU and memory information display
-  - Resource usage visualization with Material-UI components
-  - Automatic polling with configurable intervals
-  - Error handling and retry mechanisms
-  - Type-safe hardware information validation
+- Hardware monitoring system with real-time resource tracking
+  - CPU and memory usage monitoring
+  - System compatibility checks
+  - Automatic retry mechanism for hardware detection
+  - Real-time resource visualization in UI
+  - Comprehensive error handling and validation
+  - Cross-platform support (Windows, macOS, Linux)
 
 ### Changed
 
-- Updated test configuration to better handle Tauri imports
-- Improved test environment setup for consistent behavior
+- Enhanced error handling system with detailed messages
+- Improved system compatibility validation
+- Updated architecture documentation with hardware monitoring details
 
 ### Fixed
 
-- Test environment issues with polling mechanisms
-- Path alias resolution in Vitest configuration
+- Memory usage calculation and validation
+- System resource detection reliability
+- Hardware information polling mechanism

@@ -155,6 +155,79 @@ interface DownloadProgress {
 
 ## System Commands
 
+### Get Hardware Info
+
+**Command:** `get_hardware_info`
+
+**Request:** None
+
+**Response:**
+
+```typescript
+interface HardwareInfoResponse {
+  cpu: {
+    brand: string
+    cores: number
+    threads: number
+    frequency: number
+    usage: number
+  }
+  memory: {
+    total: number
+    used: number
+    free: number
+    usagePercentage: number
+  }
+  system: {
+    os: string
+    platform: string
+    version: string
+  }
+}
+```
+
+### Start Hardware Monitoring
+
+**Command:** `start_hardware_monitoring`
+
+**Request:**
+
+```typescript
+interface MonitoringConfig {
+  pollingInterval?: number // in milliseconds, default: 5000
+  enableAlerts?: boolean // default: true
+}
+```
+
+**Response:**
+
+```typescript
+interface MonitoringResponse {
+  status: 'started' | 'already_running'
+  monitorId: string
+}
+```
+
+### Stop Hardware Monitoring
+
+**Command:** `stop_hardware_monitoring`
+
+**Request:**
+
+```typescript
+interface StopMonitoringRequest {
+  monitorId: string
+}
+```
+
+**Response:**
+
+```typescript
+interface StopMonitoringResponse {
+  status: 'stopped' | 'not_running'
+}
+```
+
 ### Get System Info
 
 **Command:** `get_system_info`

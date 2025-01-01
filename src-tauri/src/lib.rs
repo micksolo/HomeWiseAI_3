@@ -7,80 +7,193 @@ pub mod hardware {
     use sysinfo::{CpuExt, System, SystemExt};
     use serde::{Serialize, Deserialize};
     use std::num::NonZeroU64;
+    use std::time::Duration;
+    use std::thread;
+
+    /// Custom error type for hardware-related operations
+    #[derive(Debug, Serialize, Deserialize)]
+    pub enum HardwareError {
+        /// CPU-related errors
+        CpuError(String),
+        /// Memory-related errors
+        MemoryError(String),
+        /// System compatibility errors
+        CompatibilityError(String),
+        /// General system errors
+        SystemError(String),
+    }
+
+    impl std::fmt::Display for HardwareError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                HardwareError::CpuError(msg) => write!(f, "CPU Error: {}", msg),
+                HardwareError::MemoryError(msg) => write!(f, "Memory Error: {}", msg),
+                HardwareError::CompatibilityError(msg) => write!(f, "Compatibility Error: {}", msg),
+                HardwareError::SystemError(msg) => write!(f, "System Error: {}", msg),
+            }
+        }
+    }
+
+    /// System compatibility requirements
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct SystemRequirements {
+        min_cpu_cores: usize,
+        min_memory_kb: u64,
+        supported_platforms: Vec<String>,
+    }
+
+    impl Default for SystemRequirements {
+        fn default() -> Self {
+            Self {
+                min_cpu_cores: 2,
+                min_memory_kb: 4 * 1024 * 1024, // 4GB
+                supported_platforms: vec![
+                    "windows".to_string(),
+                    "macos".to_string(),
+                    "linux".to_string(),
+                ],
+            }
+        }
+    }
 
     /// Represents the system hardware information
-    /// 
-    /// Contains information about the CPU and memory resources of the system.
-    /// All memory values are in kilobytes.
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     pub struct HardwareInfo {
-        /// Number of CPU cores/threads available
         pub cpu_count: usize,
-        /// CPU brand string (e.g., "Intel(R) Core(TM) i7-9750H")
         pub cpu_brand: String,
-        /// Total system memory in kilobytes
         pub memory_total: u64,
-        /// Currently used memory in kilobytes
         pub memory_used: u64,
+        pub platform: String,
     }
 
     impl HardwareInfo {
-        // Helper method to validate hardware info
-        pub fn validate(&self) -> Result<(), &'static str> {
+        /// Validates hardware information against minimum requirements
+        pub fn validate(&self) -> Result<(), HardwareError> {
             if self.cpu_count == 0 {
-                return Err("No CPU cores detected");
+                return Err(HardwareError::CpuError(
+                    "No CPU cores detected. Please check if CPU virtualization is enabled.".to_string()
+                ));
             }
             if self.cpu_brand.is_empty() {
-                return Err("CPU brand information unavailable");
+                return Err(HardwareError::CpuError(
+                    "CPU brand information unavailable. Try updating system drivers.".to_string()
+                ));
             }
             if self.memory_total == 0 {
-                return Err("Total memory information unavailable");
+                return Err(HardwareError::MemoryError(
+                    "Total memory information unavailable. Check system memory configuration.".to_string()
+                ));
             }
             if self.memory_used > self.memory_total {
-                return Err("Memory usage exceeds total memory");
+                return Err(HardwareError::MemoryError(
+                    format!("Memory usage ({} KB) exceeds total memory ({} KB). Possible memory leak or calculation error.", 
+                        self.memory_used, self.memory_total)
+                ));
+            }
+            Ok(())
+        }
+
+        /// Checks if the system meets minimum requirements
+        pub fn meets_requirements(&self, reqs: &SystemRequirements) -> Result<(), HardwareError> {
+            if self.cpu_count < reqs.min_cpu_cores {
+                return Err(HardwareError::CompatibilityError(
+                    format!("Insufficient CPU cores. Required: {}, Available: {}", 
+                        reqs.min_cpu_cores, self.cpu_count)
+                ));
+            }
+            if self.memory_total < reqs.min_memory_kb {
+                return Err(HardwareError::CompatibilityError(
+                    format!("Insufficient memory. Required: {} KB, Available: {} KB", 
+                        reqs.min_memory_kb, self.memory_total)
+                ));
+            }
+            if !reqs.supported_platforms.contains(&self.platform) {
+                return Err(HardwareError::CompatibilityError(
+                    format!("Unsupported platform: {}. Supported platforms: {}", 
+                        self.platform, reqs.supported_platforms.join(", "))
+                ));
             }
             Ok(())
         }
     }
 
-    /// Retrieves current hardware information from the system
-    /// 
-    /// This function provides a snapshot of the current hardware state, including:
-    /// - CPU information (count and brand)
-    /// - Memory usage (total and used)
-    /// 
-    /// # Returns
-    /// 
-    /// Returns a `HardwareInfo` struct containing the current hardware state
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// use homewiseai::hardware;
-    /// 
-    /// let info = hardware::get_hardware_info().expect("Failed to get hardware info");
-    /// println!("CPU cores: {}", info.cpu_count);
-    /// println!("Memory used: {} KB", info.memory_used);
-    /// ```
-    pub fn get_hardware_info() -> Result<HardwareInfo, &'static str> {
+    /// Maximum number of retries for hardware info retrieval
+    const MAX_RETRIES: u32 = 3;
+    /// Delay between retries in milliseconds
+    const RETRY_DELAY_MS: u64 = 1000;
+
+    /// Retrieves current hardware information with retry logic
+    pub fn get_hardware_info() -> Result<HardwareInfo, HardwareError> {
+        let mut last_error = None;
+        for attempt in 1..=MAX_RETRIES {
+            match try_get_hardware_info() {
+                Ok(info) => {
+                    // Validate the information
+                    if let Err(e) = info.validate() {
+                        last_error = Some(e);
+                        if attempt == MAX_RETRIES {
+                            break;
+                        }
+                        thread::sleep(Duration::from_millis(RETRY_DELAY_MS));
+                        continue;
+                    }
+                    return Ok(info);
+                }
+                Err(e) => {
+                    last_error = Some(e);
+                    if attempt == MAX_RETRIES {
+                        break;
+                    }
+                    thread::sleep(Duration::from_millis(RETRY_DELAY_MS));
+                }
+            }
+        }
+
+        Err(last_error.unwrap_or_else(|| 
+            HardwareError::SystemError("Failed to retrieve hardware information after multiple attempts".to_string())
+        ))
+    }
+
+    /// Internal function to attempt hardware info retrieval
+    fn try_get_hardware_info() -> Result<HardwareInfo, HardwareError> {
         let mut sys = System::new_all();
+        
+        // Attempt to refresh system information
         sys.refresh_all();
 
-        let info = HardwareInfo {
-            cpu_count: sys.cpus().len(),
-            cpu_brand: sys.cpus().first().map(|cpu| cpu.brand().to_string()).unwrap_or_default(),
-            memory_total: sys.total_memory(),
-            memory_used: sys.used_memory(),
-        };
+        // Get CPU information with error handling
+        let cpu_count = sys.cpus().len();
+        let cpu_brand = sys.cpus()
+            .first()
+            .map(|cpu| cpu.brand().to_string())
+            .ok_or_else(|| HardwareError::CpuError("Failed to retrieve CPU information".to_string()))?;
 
-        info.validate()?;
-        Ok(info)
+        // Get memory information with error handling
+        let memory_total = sys.total_memory();
+        let memory_used = sys.used_memory();
+
+        // Get platform information
+        let platform = std::env::consts::OS.to_string();
+
+        Ok(HardwareInfo {
+            cpu_count,
+            cpu_brand,
+            memory_total,
+            memory_used,
+            platform,
+        })
+    }
+
+    /// Checks if the system is compatible with the application
+    pub fn check_system_compatibility() -> Result<(), HardwareError> {
+        let info = get_hardware_info()?;
+        info.meets_requirements(&SystemRequirements::default())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::hardware::{self, HardwareInfo};
+    use super::hardware::{self, HardwareInfo, HardwareError, SystemRequirements};
     use std::thread;
     use std::time::Duration;
 
@@ -91,6 +204,24 @@ mod tests {
         assert!(!info.cpu_brand.is_empty(), "CPU brand should not be empty");
         assert!(info.memory_total > 0, "Total memory should be greater than 0");
         assert!(info.memory_used <= info.memory_total, "Used memory should not exceed total memory");
+    }
+
+    #[test]
+    fn test_system_compatibility() {
+        let result = hardware::check_system_compatibility();
+        assert!(result.is_ok(), "System should meet minimum requirements");
+    }
+
+    #[test]
+    fn test_custom_requirements() {
+        let info = hardware::get_hardware_info().expect("Should get hardware info");
+        let reqs = SystemRequirements {
+            min_cpu_cores: info.cpu_count + 1, // Impossible requirement
+            min_memory_kb: 1024,
+            supported_platforms: vec!["windows".to_string(), "macos".to_string()],
+        };
+        let result = info.meets_requirements(&reqs);
+        assert!(result.is_err(), "Should fail with impossible CPU requirement");
     }
 
     #[test]
@@ -131,6 +262,7 @@ mod tests {
             cpu_brand: "Test CPU".to_string(),
             memory_total: 1024,
             memory_used: 512,
+            platform: "windows".to_string(),
         };
         assert!(invalid_cpu.validate().is_err(), "Should fail with zero CPU count");
 
@@ -140,6 +272,7 @@ mod tests {
             cpu_brand: "".to_string(),
             memory_total: 1024,
             memory_used: 512,
+            platform: "windows".to_string(),
         };
         assert!(invalid_brand.validate().is_err(), "Should fail with empty CPU brand");
 
@@ -149,6 +282,7 @@ mod tests {
             cpu_brand: "Test CPU".to_string(),
             memory_total: 0,
             memory_used: 0,
+            platform: "windows".to_string(),
         };
         assert!(invalid_memory.validate().is_err(), "Should fail with zero total memory");
 
@@ -158,6 +292,7 @@ mod tests {
             cpu_brand: "Test CPU".to_string(),
             memory_total: 1024,
             memory_used: 2048,
+            platform: "windows".to_string(),
         };
         assert!(invalid_usage.validate().is_err(), "Should fail when used memory exceeds total");
     }
