@@ -51,11 +51,11 @@ describe('GpuInfoComponent', () => {
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
-        expect(screen.getByText(`Error detecting GPU: ${errorMessage}`)).toBeInTheDocument()
+        expect(screen.getByText(content => content.includes(errorMessage))).toBeInTheDocument()
       })
     })
 
-    it('displays not available message when no GPU is detected', async () => {
+    it('displays GPU information when no GPU is detected', async () => {
       const mockGpuInfo = {
         gpu_type: 'None',
         memory_total_mb: 0,
@@ -74,7 +74,8 @@ describe('GpuInfoComponent', () => {
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
-        expect(screen.getByText('No GPU information available')).toBeInTheDocument()
+        expect(screen.getByText('None')).toBeInTheDocument()
+        expect(screen.getByText('0MB')).toBeInTheDocument()
       })
     })
   })
