@@ -17,7 +17,7 @@ describe('GpuInfoComponent', () => {
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
   })
 
-  it('displays GPU information when available', async () => {
+  it('displays NVIDIA GPU information when available', async () => {
     const mockGpuInfo = {
       gpuType: 'Nvidia' as const,
       name: 'NVIDIA RTX 3080',
@@ -33,6 +33,26 @@ describe('GpuInfoComponent', () => {
       expect(screen.getByText('GPU Information')).toBeInTheDocument()
       expect(screen.getByText(/NVIDIA RTX 3080/)).toBeInTheDocument()
       expect(screen.getByText(/10240 MB/)).toBeInTheDocument()
+      expect(screen.getByText(/Available/)).toBeInTheDocument()
+    })
+  })
+
+  it('displays Apple Silicon GPU information when available', async () => {
+    const mockGpuInfo = {
+      gpuType: 'Apple' as const,
+      name: 'Apple M1 Pro',
+      vramMb: 8192,
+      isAvailable: true,
+    }
+
+    ;(invoke as jest.Mock).mockResolvedValueOnce(mockGpuInfo)
+
+    render(<GpuInfoComponent />)
+
+    await waitFor(() => {
+      expect(screen.getByText('GPU Information')).toBeInTheDocument()
+      expect(screen.getByText(/Apple M1 Pro/)).toBeInTheDocument()
+      expect(screen.getByText(/8192 MB/)).toBeInTheDocument()
       expect(screen.getByText(/Available/)).toBeInTheDocument()
     })
   })
