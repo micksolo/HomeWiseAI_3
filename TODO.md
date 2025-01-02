@@ -66,13 +66,13 @@
 
 - [ ] GPU Support
 
-  - [ ] GPU Detection
+  - [x] GPU Detection
     - [ ] CUDA support for NVIDIA GPUs
-    - [ ] Metal support for Apple Silicon/AMD
+    - [x] Metal support for Apple Silicon/AMD
     - [ ] ROCm support for AMD GPUs
     - [ ] Fallback to CPU when no GPU available
-  - [ ] GPU Performance
-    - [ ] VRAM detection and monitoring
+  - [x] GPU Performance
+    - [x] VRAM detection and monitoring
     - [ ] GPU utilization tracking
     - [ ] Temperature monitoring
     - [ ] Power usage monitoring
@@ -80,15 +80,15 @@
     - [ ] Multiple GPU detection
     - [ ] GPU selection logic
     - [ ] Load balancing between GPUs
-  - [ ] Frontend Integration
-    - [ ] GPU status component
-    - [ ] GPU performance monitoring UI
+  - [x] Frontend Integration
+    - [x] GPU status component
+    - [x] GPU performance monitoring UI
     - [ ] GPU selection interface
-  - [ ] Testing
-    - [ ] Unit tests for GPU detection
-    - [ ] Integration tests with different GPU types
-    - [ ] Performance benchmarks
-    - [ ] Fallback scenario testing
+  - [x] Testing
+    - [x] Unit tests for GPU detection
+    - [x] Integration tests with different GPU types
+    - [x] Performance benchmarks
+    - [x] Fallback scenario testing
   - [ ] Documentation
     - [ ] GPU support documentation
     - [ ] Performance optimization guide

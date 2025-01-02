@@ -1,112 +1,73 @@
-use serde::{Deserialize, Serialize};
-use std::error::Error;
+use log::info;
+use std::sync::atomic::{AtomicBool, Ordering};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, serde::Serialize, PartialEq)]
 pub enum GpuType {
-    Nvidia,
     Apple,
-    Amd,
-    None,
+    None
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct GpuInfo {
     pub gpu_type: GpuType,
-    pub name: String,
-    pub vram_mb: u32,
-    pub is_available: bool,
+    pub cuda_version: Option<String>,
+    pub driver_version: Option<String>,
+    pub compute_capability: Option<String>,
+    pub temperature_c: Option<f32>,
+    pub power_usage_w: Option<f32>,
+    pub utilization_percent: Option<f32>,
+    pub memory_total_mb: u32,
+    pub memory_used_mb: Option<u32>,
+    pub memory_free_mb: Option<u32>,
 }
 
-pub trait GpuDetector {
-    fn detect_gpu(&self) -> Result<GpuInfo, Box<dyn Error>>;
+pub mod apple;
+
+// Use atomic booleans for thread-safe state
+static TEST_MODE: AtomicBool = AtomicBool::new(false);
+static ERROR_SIMULATION: AtomicBool = AtomicBool::new(false);
+
+pub fn set_test_mode(enabled: bool) {
+    TEST_MODE.store(enabled, Ordering::SeqCst);
+    info!("Test mode set to: {}", enabled);
 }
 
-#[cfg(test)]
-pub mod mock {
-    use super::*;
-    
-    pub struct MockGpuDetector {
-        pub mock_gpu_type: GpuType,
-    }
-    
-    impl MockGpuDetector {
-        pub fn new(gpu_type: GpuType) -> Self {
-            Self {
-                mock_gpu_type: gpu_type,
-            }
-        }
-    }
-    
-    impl GpuDetector for MockGpuDetector {
-        fn detect_gpu(&self) -> Result<GpuInfo, Box<dyn Error>> {
-            match self.mock_gpu_type {
-                GpuType::Nvidia => Ok(GpuInfo {
-                    gpu_type: GpuType::Nvidia,
-                    name: "NVIDIA RTX 3080 (Mock)".to_string(),
-                    vram_mb: 10240,
-                    is_available: true,
-                }),
-                GpuType::Apple => Ok(GpuInfo {
-                    gpu_type: GpuType::Apple,
-                    name: "Apple M1 Pro (Mock)".to_string(),
-                    vram_mb: 8192,
-                    is_available: true,
-                }),
-                GpuType::Amd => Ok(GpuInfo {
-                    gpu_type: GpuType::Amd,
-                    name: "AMD Radeon RX 6800 (Mock)".to_string(),
-                    vram_mb: 16384,
-                    is_available: true,
-                }),
-                GpuType::None => Ok(GpuInfo {
-                    gpu_type: GpuType::None,
-                    name: "No GPU Available".to_string(),
-                    vram_mb: 0,
-                    is_available: false,
-                }),
-            }
-        }
-    }
+pub fn simulate_error(enabled: bool) {
+    ERROR_SIMULATION.store(enabled, Ordering::SeqCst);
+    info!("Error simulation set to: {}", enabled);
+}
+
+pub fn is_test_mode() -> bool {
+    TEST_MODE.load(Ordering::SeqCst)
+}
+
+pub fn is_error_simulation() -> bool {
+    ERROR_SIMULATION.load(Ordering::SeqCst)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mock::MockGpuDetector;
 
     #[test]
-    fn test_nvidia_gpu_detection() {
-        let detector = MockGpuDetector::new(GpuType::Nvidia);
-        let result = detector.detect_gpu().unwrap();
-        assert_eq!(result.gpu_type as i32, GpuType::Nvidia as i32);
-        assert!(result.is_available);
-        assert!(result.vram_mb > 0);
+    fn test_test_mode() {
+        assert!(!is_test_mode(), "Test mode should be disabled by default");
+        
+        set_test_mode(true);
+        assert!(is_test_mode(), "Test mode should be enabled");
+        
+        set_test_mode(false);
+        assert!(!is_test_mode(), "Test mode should be disabled");
     }
 
     #[test]
-    fn test_apple_gpu_detection() {
-        let detector = MockGpuDetector::new(GpuType::Apple);
-        let result = detector.detect_gpu().unwrap();
-        assert_eq!(result.gpu_type as i32, GpuType::Apple as i32);
-        assert!(result.is_available);
-        assert!(result.vram_mb > 0);
-    }
-
-    #[test]
-    fn test_amd_gpu_detection() {
-        let detector = MockGpuDetector::new(GpuType::Amd);
-        let result = detector.detect_gpu().unwrap();
-        assert_eq!(result.gpu_type as i32, GpuType::Amd as i32);
-        assert!(result.is_available);
-        assert!(result.vram_mb > 0);
-    }
-
-    #[test]
-    fn test_no_gpu_detection() {
-        let detector = MockGpuDetector::new(GpuType::None);
-        let result = detector.detect_gpu().unwrap();
-        assert_eq!(result.gpu_type as i32, GpuType::None as i32);
-        assert!(!result.is_available);
-        assert_eq!(result.vram_mb, 0);
+    fn test_error_simulation() {
+        assert!(!is_error_simulation(), "Error simulation should be disabled by default");
+        
+        simulate_error(true);
+        assert!(is_error_simulation(), "Error simulation should be enabled");
+        
+        simulate_error(false);
+        assert!(!is_error_simulation(), "Error simulation should be disabled");
     }
 } 

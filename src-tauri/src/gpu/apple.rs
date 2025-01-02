@@ -1,139 +1,171 @@
-use super::{GpuDetector, GpuInfo, GpuType};
-use std::error::Error;
-use std::fmt;
-use std::process::Command;
+use std::sync::Mutex;
+use once_cell::sync::Lazy;
+use log::{debug, info};
+use tokio::process::Command;
+use crate::gpu::{GpuInfo, GpuType};
 
-/// Custom error type for Apple GPU detection
-#[derive(Debug)]
-pub enum AppleGpuError {
-    CommandFailed(String),
-    ParseError(String),
-    NotAppleSilicon,
+static CACHED_GPU_INFO: Lazy<Mutex<Option<GpuInfo>>> = Lazy::new(|| Mutex::new(None));
+
+pub async fn detect_gpu() -> Result<GpuInfo, String> {
+    // Check if error simulation is enabled
+    if crate::gpu::is_error_simulation() {
+        return Err("Simulated GPU error".to_string());
+    }
+
+    // Check if test mode is enabled
+    if crate::gpu::is_test_mode() {
+        return Ok(GpuInfo {
+            gpu_type: GpuType::Apple,
+            cuda_version: None,
+            driver_version: Some("Test Driver".to_string()),
+            compute_capability: None,
+            temperature_c: Some(45.0),
+            power_usage_w: Some(15.0),
+            utilization_percent: Some(30.0),
+            memory_total_mb: 8192,
+            memory_used_mb: Some(2048),
+            memory_free_mb: Some(6144),
+        });
+    }
+
+    // Check cache first
+    if let Some(cached_info) = CACHED_GPU_INFO.lock().unwrap().as_ref() {
+        debug!("Using cached GPU info");
+        return Ok(cached_info.clone());
+    }
+
+    // Run ioreg to get GPU info
+    let output = Command::new("ioreg")
+        .args([
+            "-l",                    // List properties
+            "-w0",                   // No wrap
+            "-r",                    // Show subtrees
+            "-c",                    // Filter by class
+            "AGXAccelerator",        // GPU class
+            "-d",                    // Limit depth
+            "1"                      // Only immediate properties
+        ])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute ioreg: {}", e))?;
+
+    if !output.status.success() {
+        return Err(format!(
+            "ioreg command failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
+    let output_str = String::from_utf8_lossy(&output.stdout);
+    debug!("Raw ioreg output: {}", output_str);
+
+    // Parse output
+    let gpu_info = parse_gpu_info(&output_str)?;
+
+    // Cache the result
+    *CACHED_GPU_INFO.lock().unwrap() = Some(gpu_info.clone());
+
+    Ok(gpu_info)
 }
 
-impl fmt::Display for AppleGpuError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AppleGpuError::CommandFailed(msg) => write!(f, "Command execution failed: {}", msg),
-            AppleGpuError::ParseError(msg) => write!(f, "Failed to parse GPU info: {}", msg),
-            AppleGpuError::NotAppleSilicon => write!(f, "Not running on Apple Silicon"),
-        }
-    }
+fn parse_gpu_info(output: &str) -> Result<GpuInfo, String> {
+    // Parse ioreg output to find device model and memory
+    let memory_mb = output.lines()
+        .find(|line| line.contains("gpu-memory-total-size"))
+        .and_then(|line| line.split('=').nth(1))
+        .and_then(|val| val.trim().parse::<u32>().ok())
+        .unwrap_or(8192);
+
+    let model = if output.contains("M1 Pro") {
+        "Apple M1 Pro"
+    } else if output.contains("M1 Max") {
+        "Apple M1 Max"
+    } else if output.contains("M1") {
+        "Apple M1"
+    } else if output.contains("M2") {
+        "Apple M2"
+    } else {
+        return Err("No Apple Silicon GPU found".to_string());
+    };
+
+    info!("Found GPU - name: {}, memory: {}MB", model, memory_mb);
+
+    Ok(GpuInfo {
+        gpu_type: GpuType::Apple,
+        cuda_version: None,
+        driver_version: None,
+        compute_capability: None,
+        temperature_c: None,
+        power_usage_w: None,
+        utilization_percent: None,
+        memory_total_mb: memory_mb,
+        memory_used_mb: None,
+        memory_free_mb: None,
+    })
 }
 
-impl Error for AppleGpuError {}
-
-/// Detector for Apple Silicon GPUs
-pub struct AppleGpuDetector;
-
-impl AppleGpuDetector {
-    pub fn new() -> Self {
-        Self
-    }
-
-    /// Checks if running on Apple Silicon
-    fn is_apple_silicon() -> bool {
-        let output = Command::new("uname")
-            .arg("-m")
-            .output()
-            .map(|output| String::from_utf8_lossy(&output.stdout).to_string());
-
-        matches!(output, Ok(arch) if arch.trim() == "arm64")
-    }
-
-    /// Gets GPU information using system_profiler
-    fn get_gpu_info() -> Result<(String, u32), AppleGpuError> {
-        let output = Command::new("system_profiler")
-            .arg("SPDisplaysDataType")
-            .output()
-            .map_err(|e| AppleGpuError::CommandFailed(e.to_string()))?;
-
-        let info = String::from_utf8_lossy(&output.stdout);
-        
-        // Parse GPU name and memory
-        if let Some(gpu_line) = info.lines().find(|line| line.contains("Chipset Model:")) {
-            let name = gpu_line
-                .split("Chipset Model:")
-                .nth(1)
-                .map(|s| s.trim())
-                .ok_or_else(|| AppleGpuError::ParseError("Could not parse GPU name".to_string()))?;
-
-            // Apple Silicon GPUs use unified memory, so we get system memory
-            let memory = Command::new("sysctl")
-                .arg("-n")
-                .arg("hw.memsize")
-                .output()
-                .map_err(|e| AppleGpuError::CommandFailed(e.to_string()))?;
-
-            let memory_bytes = String::from_utf8_lossy(&memory.stdout)
-                .trim()
-                .parse::<u64>()
-                .map_err(|e| AppleGpuError::ParseError(e.to_string()))?;
-
-            // Convert bytes to MB (unified memory is shared)
-            let memory_mb = (memory_bytes / (1024 * 1024)) as u32;
-
-            Ok((name.to_string(), memory_mb))
-        } else {
-            Err(AppleGpuError::ParseError("GPU information not found".to_string()))
-        }
-    }
+pub fn set_test_mode(enabled: bool) {
+    info!("Test mode set to: {}", enabled);
 }
 
-impl GpuDetector for AppleGpuDetector {
-    fn detect_gpu(&self) -> Result<GpuInfo, Box<dyn Error>> {
-        if !Self::is_apple_silicon() {
-            return Ok(GpuInfo {
-                gpu_type: GpuType::None,
-                name: "Not Apple Silicon".to_string(),
-                vram_mb: 0,
-                is_available: false,
-            });
-        }
-
-        match Self::get_gpu_info() {
-            Ok((name, memory)) => Ok(GpuInfo {
-                gpu_type: GpuType::Apple,
-                name,
-                vram_mb: memory,
-                is_available: true,
-            }),
-            Err(e) => Ok(GpuInfo {
-                gpu_type: GpuType::None,
-                name: format!("Apple GPU Detection Failed: {}", e),
-                vram_mb: 0,
-                is_available: false,
-            }),
-        }
-    }
+pub fn simulate_error(enabled: bool) {
+    info!("Error simulation set to: {}", enabled);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::env;
+    use std::time::Instant;
 
-    #[test]
-    fn test_apple_detection() {
-        let detector = AppleGpuDetector::new();
-        let result = detector.detect_gpu().unwrap();
+    #[tokio::test]
+    async fn test_apple_gpu_detection() {
+        let result = detect_gpu().await.unwrap();
 
-        if env::var("CI").is_ok() || !AppleGpuDetector::is_apple_silicon() {
-            assert_eq!(result.gpu_type as i32, GpuType::None as i32);
-            assert!(!result.is_available);
+        if cfg!(target_os = "macos") && env::var("CI").is_err() {
+            assert!(matches!(result.gpu_type, GpuType::Apple), "Expected Apple GPU type");
+            assert!(result.memory_total_mb > 0, "Memory should be greater than 0");
         } else {
-            assert_eq!(result.gpu_type as i32, GpuType::Apple as i32);
-            assert!(result.is_available);
-            assert!(result.vram_mb > 0);
-            assert!(!result.name.is_empty());
+            assert!(matches!(result.gpu_type, GpuType::None));
+            assert_eq!(result.memory_total_mb, 0);
         }
     }
 
+    #[tokio::test]
+    async fn test_apple_gpu_performance() {
+        let start = Instant::now();
+        let result = detect_gpu().await.unwrap();
+        let duration = start.elapsed();
+
+        assert!(duration.as_millis() < 100, "GPU detection took too long: {:?}", duration);
+        assert!(matches!(result.gpu_type, GpuType::Apple), "Expected Apple GPU type");
+    }
+
+    #[tokio::test]
+    async fn test_apple_gpu_cache() {
+        // First detection
+        let start = Instant::now();
+        let first_result = detect_gpu().await.unwrap();
+        let first_duration = start.elapsed();
+
+        // Second detection (should use cache)
+        let start = Instant::now();
+        let second_result = detect_gpu().await.unwrap();
+        let second_duration = start.elapsed();
+
+        assert_eq!(first_result.gpu_type, second_result.gpu_type);
+        assert!(second_duration < first_duration, "Cached detection should be faster");
+    }
+
     #[test]
-    fn test_is_apple_silicon() {
-        let is_apple = AppleGpuDetector::is_apple_silicon();
-        // This test will pass on both Apple Silicon and other architectures
-        // as it's just verifying the detection works
-        assert!(is_apple == true || is_apple == false);
+    fn test_parse_gpu_info() {
+        let output = r#"+-o AGXAccelerator  <class AGXAccelerator>
+            | {
+            |   "gpu-memory-total-size" = 8192
+            |   "device-name" = "Apple M1 Pro"
+            | }"#;
+        let gpu_info = parse_gpu_info(output).unwrap();
+        assert!(matches!(gpu_info.gpu_type, GpuType::Apple));
+        assert_eq!(gpu_info.memory_total_mb, 8192);
     }
 } 

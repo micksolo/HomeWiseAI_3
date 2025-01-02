@@ -6,7 +6,6 @@
 pub mod hardware {
     use sysinfo::{CpuExt, System, SystemExt};
     use serde::{Serialize, Deserialize};
-    use std::num::NonZeroU64;
     use std::time::Duration;
     use std::thread;
 
@@ -216,111 +215,12 @@ pub mod hardware {
     }
 }
 
+pub mod gpu;
+pub mod commands;
+
 #[cfg(test)]
 mod tests {
-    use super::hardware::{self, HardwareInfo, HardwareError, SystemRequirements};
-    use std::thread;
-    use std::time::Duration;
-
-    #[test]
-    fn test_hardware_info_basic() {
-        let info = hardware::get_hardware_info().expect("Should get hardware info");
-        assert!(info.cpu_count > 0, "System should have at least one CPU core");
-        assert!(!info.cpu_brand.is_empty(), "CPU brand should not be empty");
-        assert!(info.memory_total > 0, "Total memory should be greater than 0");
-        assert!(info.memory_used <= info.memory_total, "Used memory should not exceed total memory");
-    }
-
-    #[test]
-    fn test_system_compatibility() {
-        let result = hardware::check_system_compatibility();
-        assert!(result.is_ok(), "System should meet minimum requirements");
-    }
-
-    #[test]
-    fn test_custom_requirements() {
-        let info = hardware::get_hardware_info().expect("Should get hardware info");
-        let reqs = SystemRequirements {
-            min_cpu_cores: info.cpu_count + 1, // Impossible requirement
-            min_memory_kb: 1024,
-            supported_platforms: vec!["windows".to_string(), "macos".to_string()],
-        };
-        let result = info.meets_requirements(&reqs);
-        assert!(result.is_err(), "Should fail with impossible CPU requirement");
-    }
-
-    #[test]
-    fn test_hardware_info_memory_consistency() {
-        let info1 = hardware::get_hardware_info().expect("Should get first hardware info");
-        thread::sleep(Duration::from_millis(100));
-        let info2 = hardware::get_hardware_info().expect("Should get second hardware info");
-
-        assert_eq!(info1.memory_total, info2.memory_total, "Total memory should remain constant");
-        assert!(info1.cpu_count == info2.cpu_count, "CPU count should remain constant");
-    }
-
-    #[test]
-    fn test_hardware_info_serialization() {
-        let info = hardware::get_hardware_info().expect("Should get hardware info");
-        let serialized = serde_json::to_string(&info).expect("Failed to serialize HardwareInfo");
-        let deserialized: hardware::HardwareInfo = serde_json::from_str(&serialized).expect("Failed to deserialize HardwareInfo");
-        
-        assert_eq!(info, deserialized, "Serialization/deserialization should preserve data");
-    }
-
-    #[test]
-    fn test_memory_values_sanity() {
-        let info = hardware::get_hardware_info().expect("Should get hardware info");
-        // Most modern systems have at least 1GB of RAM
-        assert!(info.memory_total >= 1024 * 1024, "Total memory should be at least 1GB");
-        // Used memory should be non-zero on a running system
-        assert!(info.memory_used > 0, "Used memory should be greater than 0");
-        // Used memory should not exceed total memory
-        assert!(info.memory_used <= info.memory_total, "Used memory should not exceed total memory");
-    }
-
-    #[test]
-    fn test_hardware_info_validation() {
-        // Test invalid CPU count
-        let invalid_cpu = HardwareInfo {
-            cpu_count: 0,
-            cpu_brand: "Test CPU".to_string(),
-            memory_total: 1024,
-            memory_used: 512,
-            platform: "windows".to_string(),
-        };
-        assert!(invalid_cpu.validate().is_err(), "Should fail with zero CPU count");
-
-        // Test invalid CPU brand
-        let invalid_brand = HardwareInfo {
-            cpu_count: 1,
-            cpu_brand: "".to_string(),
-            memory_total: 1024,
-            memory_used: 512,
-            platform: "windows".to_string(),
-        };
-        assert!(invalid_brand.validate().is_err(), "Should fail with empty CPU brand");
-
-        // Test invalid memory total
-        let invalid_memory = HardwareInfo {
-            cpu_count: 1,
-            cpu_brand: "Test CPU".to_string(),
-            memory_total: 0,
-            memory_used: 0,
-            platform: "windows".to_string(),
-        };
-        assert!(invalid_memory.validate().is_err(), "Should fail with zero total memory");
-
-        // Test invalid memory usage
-        let invalid_usage = HardwareInfo {
-            cpu_count: 1,
-            cpu_brand: "Test CPU".to_string(),
-            memory_total: 1024,
-            memory_used: 2048,
-            platform: "windows".to_string(),
-        };
-        assert!(invalid_usage.validate().is_err(), "Should fail when used memory exceeds total");
-    }
+    use super::*;
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

@@ -6,6 +6,8 @@ import '@fontsource/roboto/300.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
 import '@fontsource/roboto/700.css'
+import { GpuInfo } from './components/GpuInfo'
+import { TestDiagnostics } from './components/TestDiagnostics'
 
 const theme = createTheme({
   palette: {
@@ -34,6 +36,8 @@ export function App(): JSX.Element {
             leaves your device.
           </Typography>
           <HardwareMonitor />
+          <GpuInfo />
+          <TestDiagnostics />
         </Box>
       </Container>
     </ThemeProvider>
