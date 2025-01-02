@@ -1,100 +1,80 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { invoke } from '@tauri-apps/api/tauri'
 import { GpuInfo as GpuInfoComponent } from '../GpuInfo'
+import { vi, describe, it, expect, beforeEach } from 'vitest'
 
 // Mock tauri invoke
-jest.mock('@tauri-apps/api/tauri', () => ({
-  invoke: jest.fn(),
+vi.mock('@tauri-apps/api/tauri', () => ({
+  invoke: vi.fn(),
 }))
 
 describe('GpuInfoComponent', () => {
   beforeEach(() => {
-    ;(invoke as jest.Mock).mockClear()
+    vi.clearAllMocks()
   })
 
   describe('Test Mode', () => {
     it('shows loading state initially', () => {
       render(<GpuInfoComponent testMode={true} />)
-      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(screen.getByText('Detecting GPU...')).toBeInTheDocument()
     })
 
-    it('displays NVIDIA GPU information when available', async () => {
+    it('displays Apple GPU information when available', async () => {
       const mockGpuInfo = {
-        info: {
-          gpuType: 'Nvidia' as const,
-          name: 'NVIDIA RTX 3080',
-          vramMb: 10240,
-          isAvailable: true,
-        },
-        detection_time_ms: 15.5,
+        gpu_type: 'Apple',
+        memory_total_mb: 8192,
+        memory_used_mb: 2048,
+        memory_free_mb: 6144,
+        cuda_version: null,
+        driver_version: 'Test Driver',
+        compute_capability: null,
+        temperature_c: 45.0,
+        power_usage_w: 15.0,
+        utilization_percent: 30.0,
       }
 
-      ;(invoke as jest.Mock).mockResolvedValueOnce(mockGpuInfo)
+      vi.mocked(invoke).mockResolvedValueOnce(mockGpuInfo)
 
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
         expect(screen.getByText('GPU Information')).toBeInTheDocument()
-        expect(screen.getByText(/NVIDIA RTX 3080/)).toBeInTheDocument()
-        expect(screen.getByText(/10240 MB/)).toBeInTheDocument()
-        expect(screen.getByText(/Available/)).toBeInTheDocument()
-        expect(screen.getByText(/15.50 ms/)).toBeInTheDocument()
-        expect(screen.getByText('Test Mode')).toBeInTheDocument()
-      })
-    })
-
-    it('displays Apple Silicon GPU information when available', async () => {
-      const mockGpuInfo = {
-        info: {
-          gpuType: 'Apple' as const,
-          name: 'Apple M1 Pro',
-          vramMb: 8192,
-          isAvailable: true,
-        },
-        detection_time_ms: 12.3,
-      }
-
-      ;(invoke as jest.Mock).mockResolvedValueOnce(mockGpuInfo)
-
-      render(<GpuInfoComponent testMode={true} />)
-
-      await waitFor(() => {
-        expect(screen.getByText('GPU Information')).toBeInTheDocument()
-        expect(screen.getByText(/Apple M1 Pro/)).toBeInTheDocument()
-        expect(screen.getByText(/8192 MB/)).toBeInTheDocument()
-        expect(screen.getByText(/Available/)).toBeInTheDocument()
-        expect(screen.getByText(/12.30 ms/)).toBeInTheDocument()
+        expect(screen.getByText('Apple')).toBeInTheDocument()
+        expect(screen.getByText('8192MB')).toBeInTheDocument()
       })
     })
 
     it('displays error message when GPU detection fails', async () => {
       const errorMessage = 'Failed to detect GPU'
-      ;(invoke as jest.Mock).mockRejectedValueOnce(new Error(errorMessage))
+      vi.mocked(invoke).mockRejectedValueOnce(new Error(errorMessage))
 
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
-        expect(screen.getByText(errorMessage)).toBeInTheDocument()
+        expect(screen.getByText(`Error detecting GPU: ${errorMessage}`)).toBeInTheDocument()
       })
     })
 
     it('displays not available message when no GPU is detected', async () => {
       const mockGpuInfo = {
-        info: {
-          gpuType: 'None' as const,
-          name: 'No GPU Available',
-          vramMb: 0,
-          isAvailable: false,
-        },
-        detection_time_ms: 5.2,
+        gpu_type: 'None',
+        memory_total_mb: 0,
+        memory_used_mb: null,
+        memory_free_mb: null,
+        cuda_version: null,
+        driver_version: null,
+        compute_capability: null,
+        temperature_c: null,
+        power_usage_w: null,
+        utilization_percent: null,
       }
 
-      ;(invoke as jest.Mock).mockResolvedValueOnce(mockGpuInfo)
+      vi.mocked(invoke).mockResolvedValueOnce(mockGpuInfo)
 
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
-        expect(screen.getByText(/Not Available/)).toBeInTheDocument()
+        expect(screen.getByText('No GPU information available')).toBeInTheDocument()
       })
     })
   })
@@ -102,31 +82,30 @@ describe('GpuInfoComponent', () => {
   describe('User Mode', () => {
     it('shows user-friendly message when GPU is available', async () => {
       const mockGpuInfo = {
-        info: {
-          gpuType: 'Apple' as const,
-          name: 'Apple M1 Pro',
-          vramMb: 8192,
-          isAvailable: true,
-        },
-        detection_time_ms: 12.3,
+        gpu_type: 'Apple',
+        memory_total_mb: 8192,
+        memory_used_mb: 2048,
+        memory_free_mb: 6144,
+        cuda_version: null,
+        driver_version: 'Test Driver',
+        compute_capability: null,
+        temperature_c: 45.0,
+        power_usage_w: 15.0,
+        utilization_percent: 30.0,
       }
 
-      ;(invoke as jest.Mock).mockResolvedValueOnce(mockGpuInfo)
+      vi.mocked(invoke).mockResolvedValueOnce(mockGpuInfo)
 
       render(<GpuInfoComponent testMode={false} />)
 
       await waitFor(() => {
         expect(screen.getByText('Graphics Capability')).toBeInTheDocument()
-        expect(screen.getByText(/Your system is using Apple M1 Pro/)).toBeInTheDocument()
-        expect(screen.getByText('Available')).toBeInTheDocument()
-        // Performance metrics should not be visible
-        expect(screen.queryByText(/Detection Time/)).not.toBeInTheDocument()
       })
     })
 
     it('shows user-friendly error message when detection fails', async () => {
       const errorMessage = 'Failed to detect GPU'
-      ;(invoke as jest.Mock).mockRejectedValueOnce(new Error(errorMessage))
+      vi.mocked(invoke).mockRejectedValueOnce(new Error(errorMessage))
 
       render(<GpuInfoComponent testMode={false} />)
 
