@@ -1,27 +1,21 @@
 [package]
 name = "homewiseai"
 version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
 edition = "2021"
 
+[build-dependencies]
+tauri-build = { version = "1.5", features = [] }
+
 [dependencies]
-# Core dependencies
-tauri = { version = "1.5", features = ["shell-all"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.36", features = ["full"] }
-sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "sqlite"] }
-sysinfo = "0.29"           # System information
-log = "0.4"               # Logging
-
-# Utilities
-rayon = "1.7"            # Parallel processing
-dashmap = "5.4"          # Thread-safe maps
-parking_lot = "0.12"     # Synchronization primitives
-tracing = "0.1"         # Logging and diagnostics
-anyhow = "1.0"          # Error handling
-
-[build-dependencies]
-tauri-build = { version = "1.5" }
+tauri = { version = "1.5", features = [ "window-all", "app-all", "dialog-all", "fs-all", "shell-open", "dialog", "os-all", "process-all"] }
+sysinfo = "0.29.10"
+chrono = "0.4"
 
 [features]
 custom-protocol = ["tauri/custom-protocol"]

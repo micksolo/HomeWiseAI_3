@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import App from '../App'
+import { App } from '../../App'
 import { useHardwareInfo } from '../../hooks/useHardwareInfo'
 
 // Mock the useHardwareInfo hook
@@ -13,13 +13,9 @@ describe('App Component', () => {
       hardwareInfo: {
         cpuCount: 8,
         cpuBrand: 'Intel Core i7',
-        memoryTotal: 16 * 1024 * 1024,
-        memoryUsed: 8 * 1024 * 1024,
-      },
-      systemResources: {
-        memoryUsagePercentage: 50,
-        totalMemoryGB: 16,
-        usedMemoryGB: 8,
+        memoryTotal: 16777216,
+        memoryUsed: 8388608,
+        platform: 'darwin',
       },
       error: null,
       isLoading: false,
@@ -36,12 +32,12 @@ describe('App Component', () => {
 
   it('renders the privacy message', () => {
     render(<App />)
-    const message = screen.getByText(/your local ai assistant that respects your privacy/i)
+    const message = screen.getByText(/your privacy is important to us/i)
     expect(message).toBeDefined()
   })
 
   it('renders the HardwareMonitor component', () => {
     render(<App />)
-    expect(screen.getByText('System Resources')).toBeInTheDocument()
+    expect(screen.getByText(/system resources/i)).toBeDefined()
   })
 })

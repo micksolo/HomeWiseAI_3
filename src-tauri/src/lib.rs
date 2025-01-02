@@ -59,41 +59,40 @@ pub mod hardware {
     /// Represents the system hardware information
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     pub struct HardwareInfo {
+        #[serde(rename = "cpuCount")]
         pub cpu_count: usize,
+        #[serde(rename = "cpuBrand")]
         pub cpu_brand: String,
+        #[serde(rename = "memoryTotal")]
         pub memory_total: u64,
+        #[serde(rename = "memoryUsed")]
         pub memory_used: u64,
         pub platform: String,
     }
 
     impl HardwareInfo {
-        /// Validates hardware information against minimum requirements
+        /// Validates the hardware information
         pub fn validate(&self) -> Result<(), HardwareError> {
             if self.cpu_count == 0 {
-                return Err(HardwareError::CpuError(
-                    "No CPU cores detected. Please check if CPU virtualization is enabled.".to_string()
-                ));
+                return Err(HardwareError::CpuError("Invalid CPU count".to_string()));
             }
-            if self.cpu_brand.is_empty() {
-                return Err(HardwareError::CpuError(
-                    "CPU brand information unavailable. Try updating system drivers.".to_string()
-                ));
+
+            if self.cpu_brand.trim().is_empty() {
+                return Err(HardwareError::CpuError("Invalid CPU brand information".to_string()));
             }
+
             if self.memory_total == 0 {
-                return Err(HardwareError::MemoryError(
-                    "Total memory information unavailable. Check system memory configuration.".to_string()
-                ));
+                return Err(HardwareError::MemoryError("Invalid total memory value".to_string()));
             }
+
             if self.memory_used > self.memory_total {
-                return Err(HardwareError::MemoryError(
-                    format!("Memory usage ({} KB) exceeds total memory ({} KB). Possible memory leak or calculation error.", 
-                        self.memory_used, self.memory_total)
-                ));
+                return Err(HardwareError::MemoryError("Used memory exceeds total memory".to_string()));
             }
+
             Ok(())
         }
 
-        /// Checks if the system meets minimum requirements
+        /// Checks if the hardware meets the minimum requirements
         pub fn meets_requirements(&self, reqs: &SystemRequirements) -> Result<(), HardwareError> {
             if self.cpu_count < reqs.min_cpu_cores {
                 return Err(HardwareError::CompatibilityError(
@@ -107,7 +106,14 @@ pub mod hardware {
                         reqs.min_memory_kb, self.memory_total)
                 ));
             }
-            if !reqs.supported_platforms.contains(&self.platform) {
+
+            // Map platform names for compatibility check
+            let platform_to_check = match self.platform.as_str() {
+                "darwin" => "macos",
+                other => other,
+            };
+
+            if !reqs.supported_platforms.iter().any(|p| p == platform_to_check) {
                 return Err(HardwareError::CompatibilityError(
                     format!("Unsupported platform: {}. Supported platforms: {}", 
                         self.platform, reqs.supported_platforms.join(", "))
@@ -158,30 +164,49 @@ pub mod hardware {
     fn try_get_hardware_info() -> Result<HardwareInfo, HardwareError> {
         let mut sys = System::new_all();
         
-        // Attempt to refresh system information
-        sys.refresh_all();
+        // Refresh system information multiple times to ensure accuracy
+        for _ in 0..3 {
+            sys.refresh_all();
+            thread::sleep(Duration::from_millis(100));
+        }
 
         // Get CPU information with error handling
         let cpu_count = sys.cpus().len();
+        if cpu_count == 0 {
+            return Err(HardwareError::CpuError("No CPU cores detected".to_string()));
+        }
+
         let cpu_brand = sys.cpus()
             .first()
-            .map(|cpu| cpu.brand().to_string())
+            .map(|cpu| cpu.brand().trim().to_string())
+            .filter(|brand| !brand.is_empty())
             .ok_or_else(|| HardwareError::CpuError("Failed to retrieve CPU information".to_string()))?;
 
         // Get memory information with error handling
         let memory_total = sys.total_memory();
         let memory_used = sys.used_memory();
 
-        // Get platform information
-        let platform = std::env::consts::OS.to_string();
+        if memory_total == 0 {
+            return Err(HardwareError::MemoryError("Failed to detect system memory".to_string()));
+        }
 
-        Ok(HardwareInfo {
+        // Get platform information with proper mapping for macOS
+        let platform = match std::env::consts::OS {
+            "macos" => "macos".to_string(),
+            os => os.to_string(),
+        };
+
+        let info = HardwareInfo {
             cpu_count,
             cpu_brand,
             memory_total,
             memory_used,
             platform,
-        })
+        };
+
+        // Validate before returning
+        info.validate()?;
+        Ok(info)
     }
 
     /// Checks if the system is compatible with the application

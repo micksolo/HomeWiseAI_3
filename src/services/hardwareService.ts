@@ -1,4 +1,4 @@
-import { invoke } from './tauriApi'
+import { invokeWithErrorHandling } from './tauriApi'
 import { HardwareInfo, SystemResources } from '../types/hardware'
 
 /**
@@ -19,6 +19,7 @@ const validateHardwareInfo = (info: HardwareInfo): void => {
     throw new Error('Invalid CPU brand information')
   }
 
+  // Memory values are in kilobytes
   if (!Number.isInteger(info.memoryTotal) || info.memoryTotal <= 0) {
     throw new Error('Invalid total memory value')
   }
@@ -30,6 +31,10 @@ const validateHardwareInfo = (info: HardwareInfo): void => {
   if (info.memoryUsed > info.memoryTotal) {
     throw new Error('Used memory exceeds total memory')
   }
+
+  if (typeof info.platform !== 'string' || info.platform.trim().length === 0) {
+    throw new Error('Invalid platform information')
+  }
 }
 
 /**
@@ -39,7 +44,7 @@ const validateHardwareInfo = (info: HardwareInfo): void => {
  */
 export const getHardwareInfo = async (): Promise<HardwareInfo> => {
   try {
-    const info = await invoke<HardwareInfo>('get_hardware_info')
+    const info = await invokeWithErrorHandling<HardwareInfo>('get_hardware_info')
     if (!info) {
       throw new Error('Failed to retrieve hardware information')
     }
@@ -54,15 +59,17 @@ export const getHardwareInfo = async (): Promise<HardwareInfo> => {
 
 /**
  * Calculates system resource usage from hardware information.
+ * Memory values are in kilobytes from the backend.
  * @param {HardwareInfo} info - The hardware information to calculate resources from
- * @returns {SystemResources} Calculated system resource usage
+ * @returns {SystemResources} Calculated system resource usage in GB
  * @throws {Error} If the input information is invalid
  */
 export const calculateSystemResources = (info: HardwareInfo): SystemResources => {
   validateHardwareInfo(info)
 
-  const totalMemoryGB = Math.round((info.memoryTotal / (1024 * 1024)) * 100) / 100
-  const usedMemoryGB = Math.round((info.memoryUsed / (1024 * 1024)) * 100) / 100
+  // Convert from KB to GB with 2 decimal places
+  const totalMemoryGB = Math.round((info.memoryTotal / 1024 / 1024) * 100) / 100
+  const usedMemoryGB = Math.round((info.memoryUsed / 1024 / 1024) * 100) / 100
   const memoryUsagePercentage = Math.round((info.memoryUsed / info.memoryTotal) * 100 * 10) / 10
 
   // Validate calculated values

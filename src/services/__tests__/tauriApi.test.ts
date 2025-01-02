@@ -1,61 +1,55 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { invokeWithErrorHandling } from '../tauriApi'
+import { invoke } from '@tauri-apps/api'
+import { getVersion } from '@tauri-apps/api/app'
 
-describe('Tauri API', () => {
-  const originalWindow = { ...window }
-  const mockInvoke = vi.fn()
+// Mock the Tauri API modules
+vi.mock('@tauri-apps/api', () => ({
+  invoke: vi.fn(),
+}))
 
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: vi.fn(),
+}))
+
+describe('tauriApi', () => {
   beforeEach(() => {
-    vi.resetModules()
-    window = { ...originalWindow }
-  })
-
-  afterEach(() => {
-    window = { ...originalWindow }
     vi.clearAllMocks()
   })
 
-  it('should throw error when Tauri API is not available', async () => {
-    // Remove __TAURI__ from window
-    window.__TAURI__ = undefined
-
-    // Re-import the module to get fresh instance
-    const { invoke } = await import('../tauriApi')
-
-    await expect(invoke('test')).rejects.toThrow('Tauri API not available')
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
-  it('should use window.__TAURI__.invoke when available', async () => {
-    // Mock successful response
+  it('should successfully invoke a command', async () => {
     const mockResponse = { success: true }
-    mockInvoke.mockResolvedValue(mockResponse)
+    vi.mocked(invoke).mockResolvedValue(mockResponse)
+    vi.mocked(getVersion).mockResolvedValue('1.0.0')
 
-    // Set up window.__TAURI__
-    window.__TAURI__ = {
-      invoke: mockInvoke,
-    }
-
-    // Re-import the module to get fresh instance
-    const { invoke } = await import('../tauriApi')
-
-    const result = await invoke('test', { param: 'value' })
-
-    expect(mockInvoke).toHaveBeenCalledWith('test', { param: 'value' })
+    const result = await invokeWithErrorHandling('test_command')
     expect(result).toEqual(mockResponse)
   })
 
-  it('should handle invoke errors', async () => {
-    // Mock error response
-    const mockError = new Error('Invoke failed')
-    mockInvoke.mockRejectedValue(mockError)
+  it('should throw an error when command returns no data', async () => {
+    vi.mocked(invoke).mockResolvedValue(null)
+    vi.mocked(getVersion).mockResolvedValue('1.0.0')
 
-    // Set up window.__TAURI__
-    window.__TAURI__ = {
-      invoke: mockInvoke,
-    }
+    await expect(invokeWithErrorHandling('test_command')).rejects.toThrow(
+      'Command test_command returned no data'
+    )
+  })
 
-    // Re-import the module to get fresh instance
-    const { invoke } = await import('../tauriApi')
+  it('should throw an error when command fails', async () => {
+    const mockError = new Error('Command failed')
+    vi.mocked(invoke).mockRejectedValue(mockError)
+    vi.mocked(getVersion).mockResolvedValue('1.0.0')
 
-    await expect(invoke('test')).rejects.toThrow('Invoke failed')
+    await expect(invokeWithErrorHandling('test_command')).rejects.toThrow('Command failed')
+  })
+
+  it('should throw an error when Tauri is not available', async () => {
+    vi.mocked(getVersion).mockRejectedValue(new Error('Tauri not available'))
+
+    await expect(invokeWithErrorHandling('test_command')).rejects.toThrow('Tauri API not available')
   })
 })

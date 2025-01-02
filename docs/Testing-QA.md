@@ -1,37 +1,77 @@
 # Testing and Quality Assurance
 
-## Overview
+## Pre-Development Testing Setup
 
-HomeWise AI implements a comprehensive testing strategy to ensure code quality and reliability. The testing approach includes unit tests, integration tests, end-to-end tests, and performance tests.
+### Version and Configuration Verification
+
+1. **Version Compatibility**
+
+   ```
+   - Verify Tauri version in package.json matches Cargo.toml
+   - Check all dependency versions are locked
+   - Validate configuration files consistency
+   - Test minimal working example
+   ```
+
+2. **Test Environment Setup**
+
+   ```
+   - Clean build environment
+   - Verify correct Node.js and Rust versions
+   - Clear npm and Cargo caches
+   - Reset test databases
+   ```
+
+3. **Mocking Strategy**
+   ```
+   - Set up unified Tauri API mocks
+   - Configure test utilities
+   - Prepare test data fixtures
+   - Document mock usage
+   ```
 
 ## Testing Pyramid
 
 ```
-        End-to-End Tests
-            /     \
-Integration Tests  \
-          \       /
-         Unit Tests
+                Manual Testing
+              /              \
+        End-to-End Tests     \
+            /     \          /
+Integration Tests  \        /
+          \       /       /
+         Unit Tests      /
+        /              /
+    Version Tests     /
 ```
 
 ## Unit Testing
 
 ### Frontend Unit Tests
 
-- **Tools:** Jest, React Testing Library
+- **Tools:** Vitest, React Testing Library
 - **Coverage:** 80% minimum
 - **Location:** `src/__tests__/`
+- **Version Verification:** Check Tauri API version compatibility
 
 **Example Test:**
 
 ```typescript
 import { render, screen } from '@testing-library/react'
-import Chat from '../components/Chat'
+import { describe, it, expect, vi } from 'vitest'
+import { App } from '../App'
 
-test('renders chat messages', () => {
-  render(<Chat modelId="test-model" />)
-  const messageElement = screen.getByText(/Hello/i)
-  expect(messageElement).toBeInTheDocument()
+describe('App Component', () => {
+  beforeEach(() => {
+    // Mock Tauri version
+    vi.mock('@tauri-apps/api/app', () => ({
+      getVersion: () => Promise.resolve('1.5.0')
+    }))
+  })
+
+  it('renders with correct version', async () => {
+    render(<App />)
+    expect(await screen.findByText(/System Resources/i)).toBeInTheDocument()
+  })
 })
 ```
 
@@ -40,6 +80,7 @@ test('renders chat messages', () => {
 - **Tools:** Rust's built-in test framework
 - **Coverage:** 90% minimum
 - **Location:** `src-tauri/src/`
+- **Version Verification:** Test version-specific features
 
 **Example Test:**
 
@@ -49,169 +90,244 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_message_processing() {
-        let result = process_message("Hello");
-        assert_eq!(result, "Processed: Hello");
+    fn test_hardware_info_compatibility() {
+        let info = get_hardware_info().expect("Should get hardware info");
+        assert!(info.validate().is_ok(), "Hardware info should be valid");
+        assert!(info.meets_requirements(&SystemRequirements::default()).is_ok());
     }
 }
+```
+
+## Manual Testing Procedures
+
+### Feature Testing Process
+
+1. **Pre-Testing Checklist**
+
+   ```
+   - Clean application state
+   - Verify correct versions
+   - Document test environment
+   - Prepare test scenarios
+   ```
+
+2. **Test Execution Steps**
+
+   ```
+   - Follow step-by-step instructions
+   - Document actual behavior
+   - Capture screenshots/logs
+   - Note any deviations
+   ```
+
+3. **Error Scenario Testing**
+
+   ```
+   - Test error handling
+   - Verify error messages
+   - Check recovery procedures
+   - Document unexpected behavior
+   ```
+
+4. **Performance Observation**
+   ```
+   - Monitor resource usage
+   - Check response times
+   - Note any lag/freezes
+   - Test under load
+   ```
+
+### Test Documentation Template
+
+```markdown
+## Feature Test: [Feature Name]
+
+### Environment
+
+- OS: [Operating System]
+- Tauri Version: [Version]
+- Node Version: [Version]
+- Rust Version: [Version]
+
+### Test Steps
+
+1. [Step 1 description]
+
+   - Expected: [Expected behavior]
+   - Actual: [Actual behavior]
+
+2. [Step 2 description]
+   - Expected: [Expected behavior]
+   - Actual: [Actual behavior]
+
+### Error Scenarios
+
+1. [Error scenario description]
+   - Steps to reproduce
+   - Expected error message
+   - Actual behavior
+
+### Performance Notes
+
+- CPU Usage: [Observations]
+- Memory Usage: [Observations]
+- Response Time: [Measurements]
+
+### Additional Notes
+
+[Any other relevant observations]
 ```
 
 ## Integration Testing
 
 ### Frontend-Backend Integration
 
-- **Tools:** Jest, Tauri test utilities
-- **Focus:** IPC communication, data flow
+- **Tools:** Vitest, Tauri test utilities
+- **Focus:** IPC communication, version compatibility
 - **Location:** `src/__tests__/integration/`
 
 **Example Test:**
 
 ```typescript
-test('sends message via IPC', async () => {
-  const { result } = renderHook(() => useChat('test-model'))
+test('hardware info compatibility', async () => {
+  const { result } = renderHook(() => useHardwareInfo())
   await act(async () => {
-    await result.current.sendMessage('Hello')
+    await result.current.refresh()
   })
-  expect(result.current.messages).toHaveLength(1)
+  expect(result.current.hardwareInfo).toBeDefined()
+  expect(result.current.error).toBeNull()
 })
 ```
 
-## End-to-End Testing
+## Version Compatibility Testing
 
-- **Tools:** Playwright
-- **Focus:** User workflows, UI interactions
-- **Location:** `tests/e2e/`
+### Version Matrix Testing
 
-**Example Test:**
+1. **Dependency Combinations**
 
-```typescript
-test('chat workflow', async ({ page }) => {
-  await page.goto('/')
-  await page.fill('#message-input', 'Hello')
-  await page.click('#send-button')
-  await expect(page.locator('.message')).toContainText('Hello')
-})
-```
+   ```
+   - Test with different Tauri versions
+   - Verify Node.js compatibility
+   - Check Rust toolchain versions
+   - Validate package versions
+   ```
+
+2. **Feature Compatibility**
+
+   ```
+   - Test version-specific features
+   - Verify API compatibility
+   - Check for deprecations
+   - Test upgrade paths
+   ```
+
+3. **Cross-Platform Testing**
+   ```
+   - Test on Windows
+   - Test on macOS
+   - Test on Linux
+   - Document platform differences
+   ```
 
 ## Performance Testing
 
 ### Frontend Performance
 
 - **Tools:** Lighthouse, React Profiler
-- **Metrics:** First Contentful Paint, Time to Interactive
-- **Thresholds:** FCP < 1s, TTI < 2s
+- **Metrics:**
+  - First Contentful Paint < 1s
+  - Time to Interactive < 2s
+  - Memory usage < 200MB
+  - CPU usage < 30%
 
 ### Backend Performance
 
-- **Tools:** Criterion, k6
-- **Metrics:** Response time, throughput
-- **Thresholds:** P95 < 500ms, throughput > 100 req/s
+- **Tools:** Criterion, sysinfo
+- **Metrics:**
+  - Hardware info fetch < 100ms
+  - Memory leak check
+  - CPU spike monitoring
+  - Error recovery time
 
-## Test Automation
+## Error Handling Verification
 
-### CI/CD Pipeline
+### Error Scenarios
 
-- **Tools:** GitHub Actions
-- **Stages:**
-  1. Linting and formatting
-  2. Unit tests
-  3. Integration tests
-  4. End-to-end tests
-  5. Performance tests
-  6. Security scans
+1. **Version Mismatch**
 
-**Example Workflow:**
+   ```
+   - Test with incompatible versions
+   - Verify error messages
+   - Check recovery behavior
+   - Document upgrade path
+   ```
 
-```yaml
-name: CI Pipeline
+2. **Resource Constraints**
 
-on: [push, pull_request]
+   ```
+   - Test under low memory
+   - Test with high CPU load
+   - Check error boundaries
+   - Verify cleanup
+   ```
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-      - run: npm install
-      - run: npm run test
-      - run: npm run test:e2e
-```
-
-## Code Coverage
-
-- **Minimum Requirements:**
-  - Frontend: 80%
-  - Backend: 90%
-- **Tools:** Jest, tarpaulin
-- **Reporting:** HTML reports, CI integration
-
-## Quality Gates
-
-1. All tests must pass
-2. Code coverage requirements met
-3. No critical security vulnerabilities
-4. Performance thresholds met
-5. Code style and formatting compliant
-
-## Security Testing
-
-### Static Analysis
-
-- **Tools:** ESLint, Clippy
-- **Focus:** Security vulnerabilities, code smells
-
-### Dependency Scanning
-
-- **Tools:** npm audit, cargo audit
-- **Frequency:** Daily
-
-### Penetration Testing
-
-- **Tools:** OWASP ZAP, Burp Suite
-- **Focus:** XSS, CSRF, SQL injection
-
-## Test Data Management
-
-- **Fixtures:** JSON files for test data
-- **Factories:** Test data generation utilities
-- **Cleanup:** Automatic test data removal
-
-## Test Reporting
-
-- **Formats:** JUnit, HTML, JSON
-- **Tools:** Allure, Jest
-- **Integration:** CI/CD dashboards
-
-## Code Review Process
-
-1. Create pull request
-2. Automated tests run
-3. Code review by at least two developers
-4. Address feedback
-5. Merge after approval
-
-## Bug Tracking
-
-- **Tools:** GitHub Issues
-- **Workflow:**
-  1. Create issue
-  2. Assign priority
-  3. Fix and test
-  4. Verify and close
+3. **API Failures**
+   ```
+   - Test Tauri API errors
+   - Verify error propagation
+   - Check retry mechanism
+   - Test fallback behavior
+   ```
 
 ## Release Testing
 
 ### Pre-release Checklist
 
-- [ ] All tests passing
-- [ ] Code coverage met
-- [ ] Security scans clean
-- [ ] Performance tests passed
+- [ ] Version compatibility verified
+- [ ] All automated tests passing
+- [ ] Manual testing completed
+- [ ] Performance benchmarks met
+- [ ] Error handling verified
 - [ ] Documentation updated
+- [ ] Cross-platform tested
 
-### Post-release Monitoring
+### Post-release Verification
 
-- Error tracking
-- Performance monitoring
-- User feedback collection
+1. **Smoke Testing**
+
+   ```
+   - Install fresh build
+   - Verify core features
+   - Check performance
+   - Monitor errors
+   ```
+
+2. **User Acceptance**
+   ```
+   - Document user feedback
+   - Track issues
+   - Monitor metrics
+   - Plan improvements
+   ```
+
+## Test Reporting
+
+### Automated Test Reports
+
+- **Format:** HTML, JSON
+- **Location:** `coverage/`
+- **Metrics:**
+  - Test coverage
+  - Performance metrics
+  - Error rates
+  - Version compatibility
+
+### Manual Test Reports
+
+- **Format:** Markdown
+- **Location:** `docs/test-reports/`
+- **Content:**
+  - Test scenarios
+  - User feedback
+  - Screenshots
+  - Performance observations

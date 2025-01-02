@@ -1,18 +1,13 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useHardwareInfo } from '../useHardwareInfo'
-import { getHardwareInfo } from '../../services/hardwareService'
+import { invokeWithErrorHandling } from '../../services/tauriApi'
 import { StrictMode } from 'react'
 import { act } from '@testing-library/react'
 
-// Mock the hardware service
-vi.mock('../../services/hardwareService', () => ({
-  getHardwareInfo: vi.fn(),
-  calculateSystemResources: vi.fn().mockReturnValue({
-    memoryUsagePercentage: 50,
-    totalMemoryGB: 16,
-    usedMemoryGB: 8,
-  }),
+// Mock the Tauri API
+vi.mock('../../services/tauriApi', () => ({
+  invokeWithErrorHandling: vi.fn(),
 }))
 
 const renderHookInStrictMode = <T>(callback: () => T) => {
@@ -27,12 +22,13 @@ describe('useHardwareInfo', () => {
     cpuBrand: 'Intel Core i7',
     memoryTotal: 16 * 1024 * 1024,
     memoryUsed: 8 * 1024 * 1024,
+    platform: 'darwin',
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.useFakeTimers({ shouldAdvanceTime: true })
-    vi.mocked(getHardwareInfo).mockResolvedValue(mockHardwareInfo)
+    vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockHardwareInfo)
   })
 
   afterEach(() => {
@@ -60,7 +56,7 @@ describe('useHardwareInfo', () => {
 
   it('should handle errors', async () => {
     const error = new Error('Failed to fetch')
-    vi.mocked(getHardwareInfo).mockRejectedValue(error)
+    vi.mocked(invokeWithErrorHandling).mockRejectedValue(error)
 
     const { result } = renderHookInStrictMode(() => useHardwareInfo())
 
@@ -72,7 +68,7 @@ describe('useHardwareInfo', () => {
     })
 
     expect(result.current.isLoading).toBe(false)
-    expect(result.current.error).toBe(error)
+    expect(result.current.error).toBe(error.message)
     expect(result.current.hardwareInfo).toBeNull()
   }, 10000)
 
@@ -87,15 +83,16 @@ describe('useHardwareInfo', () => {
 
     expect(result.current.isLoading).toBe(false)
 
-    // Clear the initial call
-    vi.mocked(getHardwareInfo).mockClear()
+    // Clear the initial call and any pending timers
+    vi.mocked(invokeWithErrorHandling).mockClear()
+    vi.clearAllTimers()
 
     // Advance time - should not trigger polling in test environment
     await act(async () => {
       vi.advanceTimersByTime(5000)
     })
 
-    expect(getHardwareInfo).not.toHaveBeenCalled()
+    expect(invokeWithErrorHandling).not.toHaveBeenCalled()
   }, 10000)
 
   it('should allow manual refresh', async () => {
@@ -110,13 +107,15 @@ describe('useHardwareInfo', () => {
     expect(result.current.isLoading).toBe(false)
 
     // Clear the initial call
-    vi.mocked(getHardwareInfo).mockClear()
+    vi.mocked(invokeWithErrorHandling).mockClear()
 
     // Trigger manual refresh
     await act(async () => {
-      await result.current.refresh()
+      result.current.refresh()
+      await Promise.resolve() // Flush microtasks
+      vi.advanceTimersByTime(0)
     })
 
-    expect(getHardwareInfo).toHaveBeenCalledTimes(1)
+    expect(invokeWithErrorHandling).toHaveBeenCalledTimes(1)
   }, 10000)
 })

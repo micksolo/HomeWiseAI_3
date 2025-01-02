@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, act } from '@testing-library/react'
-import App from '@components/App'
+import { App } from '../App'
 
 // Mock ReactDOM
 vi.mock('react-dom/client', () => ({

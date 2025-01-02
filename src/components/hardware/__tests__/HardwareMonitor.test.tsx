@@ -12,18 +12,12 @@ describe('HardwareMonitor', () => {
     cpuBrand: 'Intel Core i7',
     memoryTotal: 16 * 1024 * 1024,
     memoryUsed: 8 * 1024 * 1024,
-  }
-
-  const mockSystemResources = {
-    memoryUsagePercentage: 50,
-    totalMemoryGB: 16,
-    usedMemoryGB: 8,
+    platform: 'darwin',
   }
 
   beforeEach(() => {
     vi.mocked(useHardwareInfo).mockReturnValue({
       hardwareInfo: mockHardwareInfo,
-      systemResources: mockSystemResources,
       error: null,
       isLoading: false,
       refresh: vi.fn(),
@@ -34,15 +28,15 @@ describe('HardwareMonitor', () => {
     render(<HardwareMonitor />)
 
     expect(screen.getByText('System Resources')).toBeInTheDocument()
-    expect(screen.getByText(mockHardwareInfo.cpuBrand)).toBeInTheDocument()
-    expect(screen.getByText(`Cores/Threads: ${mockHardwareInfo.cpuCount}`)).toBeInTheDocument()
-    expect(screen.getByText(/8.0 GB \/ 16.0 GB/)).toBeInTheDocument()
+    expect(
+      screen.getByText(`CPU: ${mockHardwareInfo.cpuBrand} (${mockHardwareInfo.cpuCount} cores)`)
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Memory Usage: 8.0 GB \/ 16.0 GB/)).toBeInTheDocument()
   })
 
   it('should show loading state', () => {
     vi.mocked(useHardwareInfo).mockReturnValue({
       hardwareInfo: null,
-      systemResources: null,
       error: null,
       isLoading: true,
       refresh: vi.fn(),
@@ -54,25 +48,23 @@ describe('HardwareMonitor', () => {
   })
 
   it('should show error state', () => {
-    const error = new Error('Failed to fetch hardware info')
+    const errorMessage = 'Failed to fetch hardware info'
     vi.mocked(useHardwareInfo).mockReturnValue({
       hardwareInfo: null,
-      systemResources: null,
-      error,
+      error: errorMessage,
       isLoading: false,
       refresh: vi.fn(),
     })
 
     render(<HardwareMonitor />)
 
-    expect(screen.getByText(error.message)).toBeInTheDocument()
+    expect(screen.getByText(errorMessage)).toBeInTheDocument()
   })
 
   it('should call refresh when button is clicked', () => {
     const refresh = vi.fn()
     vi.mocked(useHardwareInfo).mockReturnValue({
       hardwareInfo: mockHardwareInfo,
-      systemResources: mockSystemResources,
       error: null,
       isLoading: false,
       refresh,
@@ -80,7 +72,7 @@ describe('HardwareMonitor', () => {
 
     render(<HardwareMonitor />)
 
-    const refreshButton = screen.getByRole('button')
+    const refreshButton = screen.getByRole('button', { name: /refresh/i })
     fireEvent.click(refreshButton)
 
     expect(refresh).toHaveBeenCalled()
@@ -89,7 +81,6 @@ describe('HardwareMonitor', () => {
   it('should disable refresh button while loading', () => {
     vi.mocked(useHardwareInfo).mockReturnValue({
       hardwareInfo: mockHardwareInfo,
-      systemResources: mockSystemResources,
       error: null,
       isLoading: true,
       refresh: vi.fn(),
@@ -97,7 +88,7 @@ describe('HardwareMonitor', () => {
 
     render(<HardwareMonitor />)
 
-    const refreshButton = screen.getByRole('button')
+    const refreshButton = screen.getByRole('button', { name: /refresh/i })
     expect(refreshButton).toBeDisabled()
   })
 })

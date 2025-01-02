@@ -1,81 +1,124 @@
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  LinearProgress,
-  IconButton,
-  Alert,
-} from '@mui/material'
-import { Refresh as RefreshIcon } from '@mui/icons-material'
+import React, { useEffect } from 'react'
 import { useHardwareInfo } from '../../hooks/useHardwareInfo'
+import { formatBytes } from '../../utils/formatters'
+import { Alert, CircularProgress, Box, Typography, Button, Paper } from '@mui/material'
+import RefreshIcon from '@mui/icons-material/Refresh'
 
-export const HardwareMonitor = () => {
-  const { hardwareInfo, systemResources, error, isLoading, refresh } = useHardwareInfo()
+export const HardwareMonitor: React.FC = () => {
+  const { hardwareInfo, error, isLoading, refresh } = useHardwareInfo()
 
-  if (error) {
-    return (
-      <Alert
-        severity='error'
-        action={
-          <IconButton color='inherit' size='small' onClick={() => refresh()}>
-            <RefreshIcon />
-          </IconButton>
-        }
-      >
-        {error.message}
-      </Alert>
-    )
+  useEffect(() => {
+    console.log('HardwareMonitor rendered with:', {
+      hardwareInfo: hardwareInfo
+        ? {
+            ...hardwareInfo,
+            memoryTotal: formatBytes(hardwareInfo.memoryTotal * 1024),
+            memoryUsed: formatBytes(hardwareInfo.memoryUsed * 1024),
+          }
+        : null,
+      error,
+      isLoading,
+    })
+  }, [hardwareInfo, error, isLoading])
+
+  const getErrorMessage = (error: Error | string): string => {
+    console.error('Hardware Monitor Error:', error)
+    const message = error instanceof Error ? error.message : error
+    return message.includes('Unsupported platform')
+      ? 'This feature is currently only supported on Windows, macOS, and Linux.'
+      : message
   }
 
-  if (!hardwareInfo || !systemResources) {
-    return <LinearProgress />
+  const handleRefresh = () => {
+    console.log('Manually refreshing hardware info...')
+    refresh()
+  }
+
+  const renderContent = () => {
+    try {
+      if (isLoading && !hardwareInfo) {
+        console.log('Rendering loading state...')
+        return (
+          <Box display='flex' justifyContent='center' alignItems='center' p={2}>
+            <CircularProgress />
+          </Box>
+        )
+      }
+
+      if (error) {
+        console.log('Rendering error state:', error)
+        return (
+          <Alert
+            severity='error'
+            action={
+              <Button color='inherit' size='small' onClick={handleRefresh}>
+                Retry
+              </Button>
+            }
+          >
+            {getErrorMessage(error)}
+          </Alert>
+        )
+      }
+
+      if (!hardwareInfo) {
+        console.log('No hardware info available')
+        return (
+          <Alert severity='warning'>
+            Hardware information is not available. Please try refreshing.
+          </Alert>
+        )
+      }
+
+      console.log('Rendering hardware info:', hardwareInfo)
+      const cpuInfo =
+        hardwareInfo.cpuBrand && hardwareInfo.cpuCount
+          ? `${hardwareInfo.cpuBrand} (${hardwareInfo.cpuCount} cores)`
+          : 'CPU information unavailable'
+
+      const memoryInfo =
+        hardwareInfo.memoryTotal && hardwareInfo.memoryUsed
+          ? `${formatBytes(hardwareInfo.memoryUsed * 1024)} / ${formatBytes(hardwareInfo.memoryTotal * 1024)}`
+          : 'Memory information unavailable'
+
+      return (
+        <>
+          <Typography variant='h6' gutterBottom>
+            System Resources
+          </Typography>
+          <Box mb={2}>
+            <Typography variant='body1'>CPU: {cpuInfo}</Typography>
+          </Box>
+          <Box mb={2}>
+            <Typography variant='body1'>Memory Usage: {memoryInfo}</Typography>
+          </Box>
+          <Box display='flex' justifyContent='flex-end'>
+            <Button
+              startIcon={<RefreshIcon />}
+              onClick={handleRefresh}
+              variant='outlined'
+              size='small'
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+          </Box>
+        </>
+      )
+    } catch (err) {
+      console.error('Error in renderContent:', err)
+      return (
+        <Alert severity='error'>
+          An unexpected error occurred while rendering hardware information.
+          <pre>{err instanceof Error ? err.message : String(err)}</pre>
+        </Alert>
+      )
+    }
   }
 
   return (
-    <Card>
-      <CardContent>
-        <Box display='flex' justifyContent='space-between' alignItems='center' mb={2}>
-          <Typography variant='h6'>System Resources</Typography>
-          <IconButton onClick={() => refresh()} disabled={isLoading} size='small'>
-            <RefreshIcon />
-          </IconButton>
-        </Box>
-
-        <Box mb={2}>
-          <Typography variant='subtitle2' gutterBottom>
-            CPU Information
-          </Typography>
-          <Typography variant='body2' color='text.secondary'>
-            {hardwareInfo.cpuBrand}
-          </Typography>
-          <Typography variant='body2' color='text.secondary'>
-            Cores/Threads: {hardwareInfo.cpuCount}
-          </Typography>
-        </Box>
-
-        <Box>
-          <Typography variant='subtitle2' gutterBottom>
-            Memory Usage
-          </Typography>
-          <LinearProgress
-            variant='determinate'
-            value={systemResources.memoryUsagePercentage}
-            sx={{ mb: 1, height: 8, borderRadius: 1 }}
-          />
-          <Typography variant='body2' color='text.secondary'>
-            {systemResources.usedMemoryGB.toFixed(1)} GB /{' '}
-            {systemResources.totalMemoryGB.toFixed(1)} GB (
-            {systemResources.memoryUsagePercentage.toFixed(1)}%)
-          </Typography>
-        </Box>
-
-        {isLoading && (
-          <Box mt={2}>
-            <LinearProgress />
-          </Box>
-        )}
-      </CardContent>
-    </Card>
+    <Paper elevation={2} sx={{ p: 2, mb: 2 }}>
+      {renderContent()}
+    </Paper>
   )
 }

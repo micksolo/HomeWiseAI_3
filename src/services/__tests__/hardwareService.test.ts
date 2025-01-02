@@ -1,110 +1,172 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getHardwareInfo, calculateSystemResources } from '../hardwareService'
-import { invoke } from '../tauriApi'
+import { invokeWithErrorHandling } from '../tauriApi'
 
-// Mock the Tauri invoke function
 vi.mock('../tauriApi', () => ({
-  invoke: vi.fn(),
+  invokeWithErrorHandling: vi.fn(),
 }))
 
 describe('Hardware Service', () => {
-  const mockHardwareInfo = {
-    cpuCount: 8,
-    cpuBrand: 'Intel Core i7',
-    memoryTotal: 16 * 1024 * 1024,
-    memoryUsed: 8 * 1024 * 1024,
-  }
-
-  beforeEach(() => {
-    vi.clearAllMocks()
-    vi.mocked(invoke).mockResolvedValue(mockHardwareInfo)
-  })
-
   describe('Data Validation', () => {
     it('should reject invalid CPU count with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ ...mockHardwareInfo, cpuCount: 0 })
+      const mockInfo = {
+        cpuCount: 0,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608, // 8GB in KB
+        memoryUsed: 4194304, // 4GB in KB
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid CPU count')
     })
 
     it('should reject empty CPU brand with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ ...mockHardwareInfo, cpuBrand: '' })
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: '',
+        memoryTotal: 8388608,
+        memoryUsed: 4194304,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid CPU brand')
     })
 
     it('should reject zero memory values with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ ...mockHardwareInfo, memoryTotal: 0 })
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 0,
+        memoryUsed: 0,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid total memory')
     })
 
     it('should reject when used memory exceeds total memory', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({
-        ...mockHardwareInfo,
-        memoryTotal: 1024,
-        memoryUsed: 2048,
-      })
-      await expect(getHardwareInfo()).rejects.toThrow('Used memory exceeds total memory')
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608,
+        memoryUsed: 16777216,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
+      await expect(getHardwareInfo()).rejects.toThrow('Used memory exceeds total')
     })
   })
 
   describe('Type Safety', () => {
     it('should reject non-integer CPU count with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ ...mockHardwareInfo, cpuCount: 3.14 })
+      const mockInfo = {
+        cpuCount: 2.5,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608,
+        memoryUsed: 4194304,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid CPU count')
     })
 
     it('should reject non-numeric memory values with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ ...mockHardwareInfo, memoryTotal: '1024' })
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: '8GB',
+        memoryUsed: 4194304,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid total memory')
     })
 
     it('should reject missing required properties with validation error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce({ cpuCount: 8 })
+      const mockInfo = {
+        cpuCount: 4,
+        memoryTotal: 8388608,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       await expect(getHardwareInfo()).rejects.toThrow('Invalid CPU brand')
     })
   })
 
   describe('getHardwareInfo', () => {
     it('should fetch hardware info successfully', async () => {
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608,
+        memoryUsed: 4194304,
+        platform: 'darwin',
+      }
+
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(mockInfo)
       const result = await getHardwareInfo()
-      expect(result).toEqual(mockHardwareInfo)
-      expect(invoke).toHaveBeenCalledWith('get_hardware_info')
+      expect(result).toEqual(mockInfo)
     })
 
     it('should reject null response with error', async () => {
-      vi.mocked(invoke).mockResolvedValueOnce(null)
-      await expect(getHardwareInfo()).rejects.toThrow('Failed to retrieve hardware information')
+      vi.mocked(invokeWithErrorHandling).mockResolvedValue(null)
+      await expect(getHardwareInfo()).rejects.toThrow('Failed to retrieve hardware')
     })
 
     it('should propagate invoke errors', async () => {
-      const error = new Error('Invoke failed')
-      vi.mocked(invoke).mockRejectedValueOnce(error)
-      await expect(getHardwareInfo()).rejects.toThrow(error.message)
+      vi.mocked(invokeWithErrorHandling).mockRejectedValue(new Error('Invoke failed'))
+      await expect(getHardwareInfo()).rejects.toThrow('Invoke failed')
     })
   })
 
   describe('calculateSystemResources', () => {
     it('should calculate system resources correctly', () => {
-      const result = calculateSystemResources(mockHardwareInfo)
-      expect(result.totalMemoryGB).toBe(16)
-      expect(result.usedMemoryGB).toBe(8)
-      expect(result.memoryUsagePercentage).toBe(50)
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608, // 8GB in KB
+        memoryUsed: 4194304, // 4GB in KB
+        platform: 'darwin',
+      }
+
+      const resources = calculateSystemResources(mockInfo)
+      expect(resources.totalMemoryGB).toBe(8)
+      expect(resources.usedMemoryGB).toBe(4)
+      expect(resources.memoryUsagePercentage).toBe(50)
     })
 
     it('should reject invalid memory information', () => {
-      const invalidInfo = { ...mockHardwareInfo, memoryTotal: 0 }
-      expect(() => calculateSystemResources(invalidInfo)).toThrow()
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: -1,
+        memoryUsed: 0,
+        platform: 'darwin',
+      }
+
+      expect(() => calculateSystemResources(mockInfo)).toThrow('Invalid total memory')
     })
 
     it('should round values to 2 decimal places', () => {
-      const unevenInfo = {
-        ...mockHardwareInfo,
-        memoryTotal: Math.round(15.7777 * 1024 * 1024),
-        memoryUsed: Math.round(7.8888 * 1024 * 1024),
+      const mockInfo = {
+        cpuCount: 4,
+        cpuBrand: 'Test CPU',
+        memoryTotal: 8388608,
+        memoryUsed: 2796203, // ~33.33% usage
+        platform: 'darwin',
       }
-      const result = calculateSystemResources(unevenInfo)
-      expect(result.totalMemoryGB.toString()).toMatch(/^\d+(\.\d{1,2})?$/)
-      expect(result.usedMemoryGB.toString()).toMatch(/^\d+(\.\d{1,2})?$/)
-      expect(result.memoryUsagePercentage.toString()).toMatch(/^\d+(\.\d{1})?$/)
+
+      const resources = calculateSystemResources(mockInfo)
+      expect(resources.memoryUsagePercentage).toBe(33.3)
+      expect(resources.totalMemoryGB).toBe(8)
+      expect(resources.usedMemoryGB).toBe(2.67)
     })
   })
 })

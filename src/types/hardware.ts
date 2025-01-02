@@ -1,8 +1,9 @@
 export interface HardwareInfo {
   cpuCount: number
   cpuBrand: string
-  memoryTotal: number
-  memoryUsed: number
+  memoryTotal: number // in kilobytes
+  memoryUsed: number // in kilobytes
+  platform: string
 }
 
 export interface SystemResources {

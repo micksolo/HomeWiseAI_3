@@ -1,5 +1,182 @@
 # AI Task Execution Rules
 
+## Mandatory Pre-Task Checklist
+
+Before starting ANY development task, I MUST:
+
+1. **Version Check**
+
+   ```
+   [ ] Read and verify package.json version numbers
+   [ ] Read and verify Cargo.toml version numbers
+   [ ] Confirm version compatibility
+   [ ] Report versions to user
+   ```
+
+2. **Configuration Verification**
+
+   ```
+   [ ] Read all relevant config files
+   [ ] Verify config consistency
+   [ ] Report any discrepancies
+   ```
+
+3. **Documentation Review**
+
+   ```
+   [ ] Read relevant documentation
+   [ ] Note current development stage
+   [ ] Review recent changes
+   ```
+
+4. **Test Environment**
+
+   ```
+   [ ] Check test coverage requirements
+   [ ] Verify test infrastructure
+   [ ] Review recent test results
+   ```
+
+5. **User Communication**
+   ```
+   [ ] Acknowledge task receipt
+   [ ] Report environment state
+   [ ] Confirm development approach
+   [ ] Get user approval
+   ```
+
+## Development Process Rules
+
+1. **NO Implementation Without**:
+
+   - Completed pre-task checklist
+   - Version verification
+   - User approval
+   - Test plan
+
+2. **ALWAYS**:
+
+   - Report versions before changes
+   - Propose manual tests
+   - Document changes
+   - Request user verification
+
+3. **NEVER**:
+   - Skip version checks
+   - Assume configuration
+   - Proceed without user approval
+   - Skip manual testing phase
+
+## Manual Testing Protocol
+
+1. **Before Requesting User Testing**:
+
+   ```
+   [ ] Clean build verified
+   [ ] All automated tests passing
+   [ ] Test environment documented
+   [ ] Test steps prepared
+   ```
+
+2. **Testing Request Format**:
+
+   ```markdown
+   ## Manual Testing Required
+
+   ### Environment
+
+   - Current versions: [list all relevant versions]
+   - Clean build: [Yes/No]
+   - Test coverage: [percentage]
+
+   ### Test Steps
+
+   1. [Detailed step]
+      - Expected: [behavior]
+      - Verify: [specific points]
+
+   ### Error Scenarios
+
+   - [List scenarios to test]
+
+   ### Feedback Needed
+
+   - [Specific questions]
+   ```
+
+## Error Recovery Rules
+
+1. **On Version Mismatch**:
+
+   ```
+   [ ] Stop immediately
+   [ ] Report to user
+   [ ] Propose resolution
+   [ ] Wait for approval
+   ```
+
+2. **On Test Failure**:
+   ```
+   [ ] Document failure
+   [ ] Analyze root cause
+   [ ] Propose fix
+   [ ] Request user input
+   ```
+
+## Documentation Rules
+
+1. **Always Document**:
+
+   - Version changes
+   - Configuration updates
+   - Test results
+   - User feedback
+
+2. **Update**:
+   - CHANGELOG.md
+   - Testing documentation
+   - Version matrices
+   - Error catalogs
+
+## Quality Gates
+
+I will not proceed past these gates without explicit verification:
+
+1. **Pre-Development Gate**
+
+   ```
+   [ ] All versions verified
+   [ ] Configurations checked
+   [ ] Documentation reviewed
+   [ ] User approval received
+   ```
+
+2. **Implementation Gate**
+
+   ```
+   [ ] Tests written
+   [ ] Documentation updated
+   [ ] Changes documented
+   [ ] User informed
+   ```
+
+3. **Testing Gate**
+
+   ```
+   [ ] Automated tests passing
+   [ ] Manual tests prepared
+   [ ] User testing requested
+   [ ] Feedback documented
+   ```
+
+4. **Completion Gate**
+   ```
+   [ ] All tests passing
+   [ ] User approval received
+   [ ] Documentation complete
+   [ ] Changes logged
+   ```
+
 ## Task Initialization
 
 ### 1. Task Analysis
