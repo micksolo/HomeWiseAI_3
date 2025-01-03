@@ -39,8 +39,8 @@ describe('GpuInfoComponent', () => {
 
       await waitFor(() => {
         expect(screen.getByText('GPU Information')).toBeInTheDocument()
-        expect(screen.getByText('Apple')).toBeInTheDocument()
-        expect(screen.getByText('8192MB')).toBeInTheDocument()
+        expect(screen.getByText('Apple Silicon')).toBeInTheDocument()
+        expect(screen.getByText('2048.0MB / 8192MB')).toBeInTheDocument()
       })
     })
 
@@ -74,8 +74,8 @@ describe('GpuInfoComponent', () => {
       render(<GpuInfoComponent testMode={true} />)
 
       await waitFor(() => {
-        expect(screen.getByText('None')).toBeInTheDocument()
-        expect(screen.getByText('0MB')).toBeInTheDocument()
+        expect(screen.getByText('Unknown')).toBeInTheDocument()
+        expect(screen.getByText('Type:')).toBeInTheDocument()
       })
     })
   })

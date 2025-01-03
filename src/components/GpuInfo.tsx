@@ -4,7 +4,7 @@ import { Box, LinearProgress, Typography } from '@mui/material'
 import styles from './GpuInfo.module.css'
 
 interface GpuInfo {
-  gpu_type: 'Apple' | 'None'
+  gpu_type: 'Apple' | 'Nvidia' | 'None'
   memory_total_mb: number
   memory_used_mb: number | null
   memory_free_mb: number | null
@@ -106,20 +106,31 @@ export function GpuInfo({ testMode = false }: GpuInfoProps) {
     return 'error'
   }
 
+  const getGpuName = () => {
+    switch (info.gpu_type) {
+      case 'Apple':
+        return 'Apple Silicon'
+      case 'Nvidia':
+        return 'NVIDIA' + (info.cuda_version ? ` (CUDA ${info.cuda_version})` : '')
+      default:
+        return 'Unknown'
+    }
+  }
+
   return (
     <div className={styles.container}>
       <h3>{testMode ? 'GPU Information' : 'Graphics Capability'}</h3>
       <div className={styles.infoGrid}>
         <div className={styles.infoRow}>
           <span className={styles.label}>Type:</span>
-          <span className={styles.value}>{info.gpu_type}</span>
+          <span className={styles.value}>{getGpuName()}</span>
         </div>
 
         {/* Memory Usage */}
         {info.memory_total_mb > 0 && (
           <Box className={styles.metricsSection}>
             <MetricProgress
-              label='VRAM Usage'
+              label={info.gpu_type === 'Nvidia' ? 'VRAM Usage' : 'Unified Memory Usage'}
               value={info.memory_used_mb ?? 0}
               max={info.memory_total_mb}
               unit='MB'
@@ -155,25 +166,29 @@ export function GpuInfo({ testMode = false }: GpuInfoProps) {
         )}
 
         {/* Power Usage */}
-        {info.power_usage_w !== null && (
+        {info.power_usage_w !== undefined && info.power_usage_w !== null && (
           <div className={styles.infoRow}>
             <span className={styles.label}>Power Usage:</span>
             <span className={styles.value}>{info.power_usage_w.toFixed(1)}W</span>
           </div>
         )}
 
-        {info.driver_version && (
-          <div className={styles.infoRow}>
-            <span className={styles.label}>Driver Version:</span>
-            <span className={styles.value}>{info.driver_version}</span>
-          </div>
-        )}
-
-        {info.compute_capability && (
-          <div className={styles.infoRow}>
-            <span className={styles.label}>Compute Capability:</span>
-            <span className={styles.value}>{info.compute_capability}</span>
-          </div>
+        {/* NVIDIA-specific information */}
+        {info.gpu_type === 'Nvidia' && (
+          <>
+            {info.driver_version && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Driver Version:</span>
+                <span className={styles.value}>{info.driver_version}</span>
+              </div>
+            )}
+            {info.compute_capability && (
+              <div className={styles.infoRow}>
+                <span className={styles.label}>Compute Capability:</span>
+                <span className={styles.value}>{info.compute_capability}</span>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
