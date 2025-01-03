@@ -73,9 +73,9 @@
     - [ ] Fallback to CPU when no GPU available
   - [x] GPU Performance
     - [x] VRAM detection and monitoring
-    - [ ] GPU utilization tracking
-    - [ ] Temperature monitoring
-    - [ ] Power usage monitoring
+    - [x] GPU utilization tracking
+    - [x] Temperature monitoring
+    - [x] Power usage monitoring
   - [ ] Multi-GPU Support
     - [ ] Multiple GPU detection
     - [ ] GPU selection logic
@@ -89,10 +89,10 @@
     - [x] Integration tests with different GPU types
     - [x] Performance benchmarks
     - [x] Fallback scenario testing
-  - [ ] Documentation
-    - [ ] GPU support documentation
-    - [ ] Performance optimization guide
-    - [ ] Troubleshooting guide for GPU issues
+  - [x] Documentation
+    - [x] GPU support documentation
+    - [x] Performance optimization guide
+    - [x] Troubleshooting guide for GPU issues
 
 - [ ] Model Management
 

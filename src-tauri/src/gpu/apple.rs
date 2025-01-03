@@ -1,10 +1,55 @@
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-use log::{debug, info};
+use log::{debug, info, warn};
 use tokio::process::Command;
 use crate::gpu::{GpuInfo, GpuType};
 
 static CACHED_GPU_INFO: Lazy<Mutex<Option<GpuInfo>>> = Lazy::new(|| Mutex::new(None));
+
+async fn get_gpu_metrics() -> Result<(Option<f32>, Option<f32>, Option<f32>), String> {
+    // Run powermetrics to get GPU utilization
+    let output = Command::new("powermetrics")
+        .args([
+            "--samplers",
+            "gpu_power",
+            "-i",
+            "1000",  // 1 second interval
+            "-n",
+            "1",     // Only one sample
+        ])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to execute powermetrics: {}", e))?;
+
+    if !output.status.success() {
+        warn!("powermetrics command failed: {}", String::from_utf8_lossy(&output.stderr));
+        return Ok((None, None, None));
+    }
+
+    let output_str = String::from_utf8_lossy(&output.stdout);
+    debug!("Raw powermetrics output: {}", output_str);
+
+    // Parse the output to get GPU metrics
+    let utilization = output_str
+        .lines()
+        .find(|line| line.contains("GPU Active"))
+        .and_then(|line| line.split(':').nth(1))
+        .and_then(|val| val.trim().trim_end_matches('%').parse::<f32>().ok());
+
+    let power = output_str
+        .lines()
+        .find(|line| line.contains("GPU Power"))
+        .and_then(|line| line.split(':').nth(1))
+        .and_then(|val| val.trim().trim_end_matches('W').parse::<f32>().ok());
+
+    let temperature = output_str
+        .lines()
+        .find(|line| line.contains("GPU die temperature"))
+        .and_then(|line| line.split(':').nth(1))
+        .and_then(|val| val.trim().trim_end_matches('C').parse::<f32>().ok());
+
+    Ok((utilization, power, temperature))
+}
 
 pub async fn detect_gpu() -> Result<GpuInfo, String> {
     // Check if error simulation is enabled
@@ -59,8 +104,16 @@ pub async fn detect_gpu() -> Result<GpuInfo, String> {
     let output_str = String::from_utf8_lossy(&output.stdout);
     debug!("Raw ioreg output: {}", output_str);
 
-    // Parse output
-    let gpu_info = parse_gpu_info(&output_str)?;
+    // Get GPU metrics
+    let (utilization, power, temperature) = get_gpu_metrics().await?;
+
+    // Parse output and create GPU info
+    let mut gpu_info = parse_gpu_info(&output_str)?;
+    
+    // Update with metrics
+    gpu_info.utilization_percent = utilization;
+    gpu_info.power_usage_w = power;
+    gpu_info.temperature_c = temperature;
 
     // Cache the result
     *CACHED_GPU_INFO.lock().unwrap() = Some(gpu_info.clone());
@@ -167,5 +220,27 @@ mod tests {
         let gpu_info = parse_gpu_info(output).unwrap();
         assert!(matches!(gpu_info.gpu_type, GpuType::Apple));
         assert_eq!(gpu_info.memory_total_mb, 8192);
+    }
+
+    #[tokio::test]
+    async fn test_gpu_metrics() {
+        if cfg!(target_os = "macos") && env::var("CI").is_err() {
+            let (utilization, power, temperature) = get_gpu_metrics().await.unwrap();
+            
+            // At least one metric should be available
+            assert!(utilization.is_some() || power.is_some() || temperature.is_some(),
+                "Expected at least one GPU metric to be available");
+            
+            // Validate metric ranges
+            if let Some(util) = utilization {
+                assert!(util >= 0.0 && util <= 100.0, "Utilization should be between 0 and 100");
+            }
+            if let Some(pow) = power {
+                assert!(pow >= 0.0, "Power usage should be non-negative");
+            }
+            if let Some(temp) = temperature {
+                assert!(temp >= 0.0 && temp <= 100.0, "Temperature should be in reasonable range");
+            }
+        }
     }
 } 
