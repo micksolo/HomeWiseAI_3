@@ -28,23 +28,18 @@ interface MetricProgressProps {
   color?: 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'
 }
 
-function MetricProgress({ label, value, max, unit, color = 'primary' }: MetricProgressProps) {
-  const percentage = (value / max) * 100
-
+const MetricProgress: React.FC<MetricProgressProps> = ({ label, value, max, unit }) => {
   return (
-    <Box className={styles.metricProgress}>
-      <Box display='flex' justifyContent='space-between' alignItems='center' mb={1}>
+    <Box sx={{ mb: 2 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant='body2'>{label}</Typography>
         <Typography variant='body2'>
-          {value.toFixed(1)}
-          {unit} / {max}
-          {unit}
+          {value !== undefined ? `${value.toFixed(1)}${unit} / ${max}${unit}` : 'N/A'}
         </Typography>
       </Box>
       <LinearProgress
         variant='determinate'
-        value={percentage}
-        color={color}
+        value={value !== undefined ? (value / max) * 100 : 0}
         sx={{ height: 8, borderRadius: 4 }}
       />
     </Box>
